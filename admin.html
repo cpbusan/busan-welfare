@@ -67,6 +67,7 @@
   .group-block[open] .group-summary .arrow{transform:rotate(90deg);}
   .group-summary .count{font-weight:400;color:var(--ink-soft);font-size:13px;}
   .group-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px;}
+  .group-table th{padding:6px;text-align:left;color:var(--ink-soft);font-size:12px;font-weight:700;border-bottom:1px solid var(--line);}
   .group-table td{padding:7px 6px;border-bottom:1px solid var(--line);}
 </style>
 </head>
@@ -466,7 +467,9 @@ async function loadMyServices(){
     details.open = true;
     details.innerHTML = `
       <summary class="group-summary"><span class="arrow">▶</span> ${key} <span class="count">(${items.length})</span></summary>
-      <table class="group-table"><tbody>
+      <table class="group-table">
+        <thead><tr><th style="text-align:left;">서비스명</th><th style="text-align:left;">연계기관</th><th></th></tr></thead>
+        <tbody>
         ${items.map(d => {
           const s = d.data();
           return `<tr>
