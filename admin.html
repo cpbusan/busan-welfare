@@ -91,9 +91,9 @@
       <button class="btn secondary" id="btn-csv-upload" style="margin-top:10px;">CSV 업로드</button>
       <div class="msg" id="csv-msg"></div>
       <div class="csv-guide">
-        컬럼 순서(첫 줄은 제목 줄): <b>서비스명, 대분류, 설명, 문의처, 지원영역, 나이최소, 나이최대, 장애유형, 장애정도, 소득수준, 지역</b><br>
-        여러 값은 슬래시(/)로 구분. 지원영역은 주거/보건의료/돌봄/여가/정신건강/사회참여 중 선택. 지역은 "구 동" 형식으로 띄어써서 입력. 조건 없으면 빈칸.<br>
-        예) 방문요양, 돌봄, 재가 어르신 방문 돌봄, 051-000-0000, 돌봄, 65, 120, , 심한 장애/심하지 않은 장애, 기초생활수급자, 북구 구포1동/북구 구포2동
+        컬럼 순서(첫 줄은 제목 줄): <b>서비스명, 대분류, 설명, 구분, 연계기관, 문의처, 지원영역, 나이최소, 나이최대, 장애유형, 장애정도, 소득수준, 지역</b><br>
+        구분은 공공/기타/민간/컨소시엄/특성화 중 선택. 여러 값은 슬래시(/)로 구분. 지원영역은 주거/보건의료/돌봄/여가/정신건강/사회참여/기타 중 선택. 지역은 "구 동" 형식으로 띄어써서 입력. 조건 없으면 빈칸.<br>
+        예) 방문요양, 돌봄, 재가 어르신 방문 돌봄, 민간, 부산인테리어, 051-000-0000, 돌봄, 65, 120, , 심한 장애/심하지 않은 장애, 기초생활수급자, 북구 구포1동/북구 구포2동
       </div>
     </div>
 
@@ -105,6 +105,12 @@
         <div class="field"><label>대분류</label><input id="s-category" placeholder="예: 돌봄, 재활, 일자리"></div>
       </div>
       <div class="field"><label>설명</label><textarea id="s-desc"></textarea></div>
+      <div class="row2">
+        <div class="field"><label>구분</label>
+          <select id="s-servicetype"><option value="">선택 안 함</option></select>
+        </div>
+        <div class="field"><label>연계기관</label><input id="s-partner" placeholder="예: 부산인테리어"></div>
+      </div>
       <div class="field"><label>문의처</label><input id="s-contact" placeholder="전화번호 등"></div>
       <div class="field">
         <label>지원영역 <span style="font-weight:400; color:var(--ink-soft); font-size:12px;">(중복 선택 가능)</span></label>
@@ -161,10 +167,11 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const DISABILITY_TYPES = ["지체","뇌병변","시각","청각","언어","안면","신장","심장","호흡기","간","장루요루","뇌전증","지적","자폐성","정신","췌장"];
+const DISABILITY_TYPES = ["지체","뇌병변","시각","청각","언어","안면","신장","심장","호흡기","간","장루요루","뇌전증","지적","자폐성","정신","췌장","비장애"];
 const DISABILITY_LEVELS = ["심한 장애","심하지 않은 장애"];
-const INCOME_LEVELS = ["기초생활수급자","차상위계층","한부모가정"];
-const SUPPORT_AREAS = ["주거","보건의료","돌봄","여가","정신건강","사회참여"];
+const INCOME_LEVELS = ["기초생활수급자","차상위계층"];
+const SUPPORT_AREAS = ["주거","보건의료","돌봄","여가","정신건강","사회참여","기타"];
+const SERVICE_TYPES = ["공공","기타","민간","컨소시엄","특성화"];
 const REGIONS = {
   "중구": ["중앙동","동광동","대청동","보수동","부평동","광복동","남포동","영주1동","영주2동"],
   "서구": ["동대신1동","동대신2동","동대신3동","서대신1동","서대신3동","서대신4동","부민동","아미동","초장동","충무동","남부민1동","남부민2동","암남동"],
@@ -242,6 +249,12 @@ function buildChips(containerId, options){
   });
 }
 buildChips("s-area", SUPPORT_AREAS);
+const serviceTypeSel = document.getElementById("s-servicetype");
+SERVICE_TYPES.forEach(t => {
+  const o = document.createElement("option");
+  o.value = t; o.textContent = t;
+  serviceTypeSel.appendChild(o);
+});
 buildChips("s-level", DISABILITY_LEVELS);
 buildChips("s-type", DISABILITY_TYPES);
 buildChips("s-income", INCOME_LEVELS);
@@ -347,6 +360,8 @@ function resetForm(){
   document.getElementById("s-category").value = "";
   document.getElementById("s-desc").value = "";
   document.getElementById("s-contact").value = "";
+  document.getElementById("s-servicetype").value = "";
+  document.getElementById("s-partner").value = "";
   document.getElementById("s-agemin").value = "";
   document.getElementById("s-agemax").value = "";
   setActiveChips("s-level", []);
@@ -376,6 +391,8 @@ document.getElementById("btn-save").addEventListener("click", async () => {
     category: document.getElementById("s-category").value.trim(),
     description: document.getElementById("s-desc").value.trim(),
     contact: document.getElementById("s-contact").value.trim(),
+    serviceType: document.getElementById("s-servicetype").value,
+    partnerOrg: document.getElementById("s-partner").value.trim(),
     supportAreas: getActiveChips("s-area"),
     ageMin: document.getElementById("s-agemin").value === "" ? 0 : Number(document.getElementById("s-agemin").value),
     ageMax: document.getElementById("s-agemax").value === "" ? 120 : Number(document.getElementById("s-agemax").value),
@@ -439,6 +456,8 @@ function editService(id, docs){
   document.getElementById("s-category").value = s.category || "";
   document.getElementById("s-desc").value = s.description || "";
   document.getElementById("s-contact").value = s.contact || "";
+  document.getElementById("s-servicetype").value = s.serviceType || "";
+  document.getElementById("s-partner").value = s.partnerOrg || "";
   setActiveChips("s-area", s.supportAreas);
   document.getElementById("s-agemin").value = s.ageMin ?? "";
   document.getElementById("s-agemax").value = s.ageMax ?? "";
@@ -486,6 +505,8 @@ document.getElementById("btn-csv-upload").addEventListener("click", () => {
             category: (row["대분류"]||"").trim(),
             description: (row["설명"]||"").trim(),
             contact: (row["문의처"]||"").trim(),
+            serviceType: (row["구분"]||"").trim(),
+            partnerOrg: (row["연계기관"]||"").trim(),
             supportAreas: splitField(row["지원영역"]),
             ageMin: row["나이최소"] ? Number(row["나이최소"]) : 0,
             ageMax: row["나이최대"] ? Number(row["나이최대"]) : 120,
