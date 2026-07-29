@@ -493,9 +493,10 @@ function cardHtml(svc){
     const c = badgeColor(area);
     return `<span class="badge" style="background:${c.bg}; color:${c.fg};">${area}</span>`;
   }).join("");
+  const closedBadge = svc.status === "종결" ? `<span class="badge" style="background:#F2E2E2; color:#B04A4A;">종결</span>` : "";
   return `
     <div class="card" id="card-${svc.id}">
-      ${areaBadges}
+      ${areaBadges}${closedBadge}
       <h3>${svc.name || ""}</h3>
       <div class="agency">${svc.agencyName || ""}</div>
       <div class="desc">${svc.description || ""}</div>
@@ -504,8 +505,9 @@ function cardHtml(svc){
 
 function openModal(svc){
   const body = document.getElementById("modal-body");
+  const closedBadge = svc.status === "종결" ? ` <span class="badge" style="background:#F2E2E2; color:#B04A4A; vertical-align:middle;">종결</span>` : "";
   body.innerHTML = `
-    <h2>${svc.name}</h2>
+    <h2>${svc.name}${closedBadge}</h2>
     <div class="agency">${svc.agencyName}</div>
     <div class="row"><div class="k">서비스 내용</div><div class="v">${svc.description || "상세 설명이 없습니다."}</div></div>
     ${svc.partnerOrg ? `<div class="row"><div class="k">연계기관</div><div class="v">${svc.partnerOrg}</div></div>` : ""}
