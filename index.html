@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>부산 북구 복지서비스 찾기</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root{
+    --bg:#FAF3EA;
+    --card:#FFFFFF;
+    --ink:#3D2C29;
+    --ink-soft:#7A6A62;
+    --salmon:#E88A76;
+    --salmon-deep:#D96F58;
+    --sage:#8B9A7D;
+    --line:#EAE0D3;
+    --radius:16px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Pretendard',-apple-system,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+  }
+  header{
+    padding:36px 20px 24px;
+    text-align:center;
+  }
+  header .eyebrow{
+    font-size:13px;
+    color:var(--salmon-deep);
+    font-weight:600;
+    letter-spacing:0.5px;
+  }
+  header h1{
+    font-size:26px;
+    margin:6px 0 4px;
+    font-weight:800;
+  }
+  header p{
+    color:var(--ink-soft);
+    font-size:14px;
+    margin:0;
+  }
+  .wrap{
+    max-width:960px;
+    margin:0 auto;
+    padding:0 16px 60px;
+  }
+  .filter-box{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:20px;
+    margin-bottom:20px;
+  }
+  .filter-row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+    margin-bottom:14px;
+  }
+  @media (max-width:600px){
+    .filter-row{grid-template-columns:1fr;}
+  }
+  .field label{
+    display:block;
+    font-size:13px;
+    font-weight:700;
+    margin-bottom:6px;
+    color:var(--ink);
+  }
+  .field select, .field input[type=number]{
+    width:100%;
+    padding:10px 12px;
+    border-radius:10px;
+    border:1px solid var(--line);
+    font-size:14px;
+    background:#fff;
+    font-family:inherit;
+    color:var(--ink);
+  }
+  .chip-group{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+  }
+  .chip{
+    border:1px solid var(--line);
+    background:#fff;
+    border-radius:999px;
+    padding:6px 12px;
+    font-size:13px;
+    cursor:pointer;
+    user-select:none;
+    transition:all .15s;
+    color:var(--ink-soft);
+  }
+  .chip.active{
+    background:var(--salmon);
+    color:#fff;
+    border-color:var(--salmon);
+    font-weight:600;
+  }
+  .filter-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    margin-top:6px;
+  }
+  .btn-reset{
+    background:none;
+    border:1px solid var(--line);
+    color:var(--ink-soft);
+    padding:8px 14px;
+    border-radius:10px;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .result-count{
+    font-size:14px;
+    color:var(--ink-soft);
+    margin:4px 2px 12px;
+  }
+  .result-count b{color:var(--salmon-deep);}
+  .cards{
+    display:grid;
+    gap:12px;
+  }
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:16px 18px;
+    cursor:pointer;
+    transition:transform .12s, box-shadow .12s;
+  }
+  .card:hover{
+    transform:translateY(-2px);
+    box-shadow:0 6px 18px rgba(217,111,88,0.12);
+  }
+  .badge{
+    display:inline-block;
+    background:#F3E3DC;
+    color:var(--salmon-deep);
+    font-size:12px;
+    font-weight:700;
+    padding:3px 10px;
+    border-radius:999px;
+    margin-bottom:8px;
+  }
+  .card h3{
+    margin:0 0 4px;
+    font-size:17px;
+  }
+  .card .agency{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+  .card .desc{
+    font-size:14px;
+    color:var(--ink);
+    line-height:1.5;
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+  .empty, .loading{
+    text-align:center;
+    padding:60px 20px;
+    color:var(--ink-soft);
+  }
+  .empty .big{font-size:34px;margin-bottom:8px;}
+  /* 모달 */
+  .modal-bg{
+    position:fixed;inset:0;
+    background:rgba(61,44,41,0.4);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+    z-index:50;
+  }
+  .modal-bg.show{display:flex;}
+  .modal{
+    background:#fff;
+    border-radius:20px;
+    max-width:480px;
+    width:100%;
+    max-height:85vh;
+    overflow-y:auto;
+    padding:26px;
+  }
+  .modal h2{margin:0 0 4px;font-size:20px;}
+  .modal .agency{color:var(--ink-soft);font-size:14px;margin-bottom:14px;}
+  .modal .row{margin-bottom:12px;}
+  .modal .row .k{font-size:12px;color:var(--salmon-deep);font-weight:700;margin-bottom:3px;}
+  .modal .row .v{font-size:14px;line-height:1.6;}
+  .modal-close{
+    display:block;
+    margin-top:18px;
+    width:100%;
+    padding:12px;
+    border:none;
+    border-radius:12px;
+    background:var(--salmon);
+    color:#fff;
+    font-weight:700;
+    font-size:14px;
+    cursor:pointer;
+  }
+  footer{
+    text-align:center;
+    padding:20px;
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+  footer a{color:var(--ink-soft);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">BUSAN BUK-GU</div>
+  <h1>북구 복지서비스 찾기</h1>
+  <p>조건을 선택하면 받을 수 있는 복지서비스를 바로 확인할 수 있어요</p>
+</header>
+
+<div class="wrap">
+
+  <div class="filter-box">
+    <div class="filter-row">
+      <div class="field">
+        <label>나이</label>
+        <input type="number" id="f-age" placeholder="예: 68" min="0" max="120">
+      </div>
+      <div class="field">
+        <label>거주 지역(동)</label>
+        <select id="f-region">
+          <option value="">전체</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field" style="margin-bottom:14px;">
+      <label>장애유형·정도</label>
+      <div class="chip-group" id="f-disability"></div>
+    </div>
+
+    <div class="field" style="margin-bottom:0;">
+      <label>소득 수준</label>
+      <div class="chip-group" id="f-income"></div>
+    </div>
+
+    <div class="filter-actions">
+      <button class="btn-reset" id="btn-reset">조건 초기화</button>
+    </div>
+  </div>
+
+  <div class="result-count" id="result-count"></div>
+  <div id="list-area"><div class="loading">불러오는 중...</div></div>
+
+</div>
+
+<footer>부산 북구 복지서비스 안내 · <a href="admin.html">기관 관리자 로그인</a></footer>
+
+<div class="modal-bg" id="modal-bg">
+  <div class="modal" id="modal-body"></div>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { firebaseConfig } from "./firebase-config.js";
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ===== 옵션 정의 =====
+const REGIONS = ["구포1동","구포2동","구포3동","금곡동","화명1동","화명2동","화명3동","덕천1동","덕천2동","덕천3동","만덕1동","만덕2동","만덕3동"];
+const DISABILITY_TYPES = ["지체","뇌병변","시각","청각","언어","안면","신장","심장","호흡기","간","장루요루","뇌전증","지적","자폐성","정신"];
+const DISABILITY_LEVELS = ["심한 장애","심하지 않은 장애"];
+const INCOME_LEVELS = ["기초생활수급자","차상위계층","한부모가정"];
+
+const regionSel = document.getElementById("f-region");
+REGIONS.forEach(r => {
+  const o = document.createElement("option");
+  o.value = r; o.textContent = r;
+  regionSel.appendChild(o);
+});
+
+function buildChips(containerId, options, groupKey){
+  const el = document.getElementById(containerId);
+  options.forEach(opt => {
+    const chip = document.createElement("div");
+    chip.className = "chip";
+    chip.textContent = opt;
+    chip.dataset.value = opt;
+    chip.addEventListener("click", () => {
+      chip.classList.toggle("active");
+      render();
+    });
+    el.appendChild(chip);
+  });
+}
+buildChips("f-disability", [...DISABILITY_LEVELS, ...DISABILITY_TYPES], "disability");
+buildChips("f-income", INCOME_LEVELS, "income");
+
+function getActiveChips(containerId){
+  return [...document.querySelectorAll(`#${containerId} .chip.active`)].map(c => c.dataset.value);
+}
+
+let allServices = [];
+
+async function loadServices(){
+  const snap = await getDocs(collection(db, "services"));
+  allServices = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  render();
+}
+
+function matches(svc){
+  const age = document.getElementById("f-age").value;
+  const region = document.getElementById("f-region").value;
+  const disabilitySel = getActiveChips("f-disability");
+  const incomeSel = getActiveChips("f-income");
+
+  // 나이: 서비스에 범위가 없으면(0~120) 전체 허용
+  if(age !== ""){
+    const a = Number(age);
+    const min = svc.ageMin ?? 0, max = svc.ageMax ?? 120;
+    if(a < min || a > max) return false;
+  }
+  // 지역: 서비스 regions가 비어있으면 전체 허용, 아니면 선택 지역 포함해야 함
+  if(region && svc.regions && svc.regions.length > 0 && !svc.regions.includes(region)) return false;
+
+  // 장애유형·정도: 선택한 게 있으면, 서비스 조건이 비어있거나(무관) 겹치는 게 있어야 함
+  if(disabilitySel.length > 0){
+    const svcD = [...(svc.disabilityLevel||[]), ...(svc.disabilityTypes||[])];
+    if(svcD.length > 0 && !disabilitySel.some(v => svcD.includes(v))) return false;
+  }
+  // 소득수준
+  if(incomeSel.length > 0){
+    const svcI = svc.incomeLevels || [];
+    if(svcI.length > 0 && !incomeSel.some(v => svcI.includes(v))) return false;
+  }
+  return true;
+}
+
+function render(){
+  const filtered = allServices.filter(matches);
+  document.getElementById("result-count").innerHTML = `조건에 맞는 서비스 <b>${filtered.length}</b>건`;
+  const area = document.getElementById("list-area");
+  if(filtered.length === 0){
+    area.innerHTML = `<div class="empty"><div class="big">🔍</div>조건에 맞는 서비스가 없어요<br>조건을 조정해보세요</div>`;
+    return;
+  }
+  area.innerHTML = `<div class="cards">${filtered.map(cardHtml).join("")}</div>`;
+  filtered.forEach(svc => {
+    document.getElementById(`card-${svc.id}`).addEventListener("click", () => openModal(svc));
+  });
+}
+
+function cardHtml(svc){
+  return `
+    <div class="card" id="card-${svc.id}">
+      <span class="badge">${svc.category || "일반복지"}</span>
+      <h3>${svc.name || ""}</h3>
+      <div class="agency">${svc.agencyName || ""}</div>
+      <div class="desc">${svc.description || ""}</div>
+    </div>`;
+}
+
+function openModal(svc){
+  const body = document.getElementById("modal-body");
+  body.innerHTML = `
+    <h2>${svc.name}</h2>
+    <div class="agency">${svc.agencyName}</div>
+    <div class="row"><div class="k">서비스 내용</div><div class="v">${svc.description || "상세 설명이 없습니다."}</div></div>
+    <div class="row"><div class="k">대상 조건</div><div class="v">${conditionSummary(svc)}</div></div>
+    <div class="row"><div class="k">문의</div><div class="v">${svc.contact || "문의처 미등록"}</div></div>
+    <button class="modal-close" id="modal-close-btn">닫기</button>
+  `;
+  document.getElementById("modal-close-btn").addEventListener("click", closeModal);
+  document.getElementById("modal-bg").classList.add("show");
+}
+function closeModal(){ document.getElementById("modal-bg").classList.remove("show"); }
+document.getElementById("modal-bg").addEventListener("click", e => {
+  if(e.target.id === "modal-bg") closeModal();
+});
+
+function conditionSummary(svc){
+  const parts = [];
+  if(svc.ageMin != null || svc.ageMax != null){
+    parts.push(`나이 ${svc.ageMin ?? 0}~${svc.ageMax ?? 120}세`);
+  }
+  if(svc.disabilityLevel?.length) parts.push(svc.disabilityLevel.join("/"));
+  if(svc.disabilityTypes?.length) parts.push(svc.disabilityTypes.join(","));
+  if(svc.incomeLevels?.length) parts.push(svc.incomeLevels.join(","));
+  if(svc.regions?.length) parts.push(svc.regions.join(","));
+  return parts.length ? parts.join(" · ") : "조건 무관(전체 대상)";
+}
+
+document.getElementById("f-age").addEventListener("input", render);
+document.getElementById("f-region").addEventListener("change", render);
+document.getElementById("btn-reset").addEventListener("click", () => {
+  document.getElementById("f-age").value = "";
+  document.getElementById("f-region").value = "";
+  document.querySelectorAll(".chip.active").forEach(c => c.classList.remove("active"));
+  render();
+});
+
+loadServices();
+</script>
+</body>
+</html>

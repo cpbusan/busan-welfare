@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>기관 관리자 - 북구 복지서비스</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root{
+    --bg:#FAF3EA; --card:#FFFFFF; --ink:#3D2C29; --ink-soft:#7A6A62;
+    --salmon:#E88A76; --salmon-deep:#D96F58; --line:#EAE0D3; --radius:16px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Pretendard',-apple-system,sans-serif;background:var(--bg);color:var(--ink);}
+  .wrap{max-width:720px;margin:0 auto;padding:36px 16px 60px;}
+  h1{font-size:22px;margin-bottom:4px;}
+  .sub{color:var(--ink-soft);font-size:13px;margin-bottom:24px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px;margin-bottom:18px;}
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:13px;font-weight:700;margin-bottom:6px;}
+  .field input, .field select, .field textarea{
+    width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);
+    font-size:14px;font-family:inherit;color:var(--ink);
+  }
+  .field textarea{min-height:70px;resize:vertical;}
+  .btn{
+    background:var(--salmon);color:#fff;border:none;border-radius:10px;
+    padding:11px 18px;font-size:14px;font-weight:700;cursor:pointer;
+  }
+  .btn.secondary{background:none;border:1px solid var(--line);color:var(--ink-soft);}
+  .btn.danger{background:none;border:1px solid #E0BDB4;color:var(--salmon-deep);}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .msg{font-size:13px;margin-top:8px;}
+  .msg.error{color:var(--salmon-deep);}
+  .msg.ok{color:#5C7A4A;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);}
+  th{color:var(--ink-soft);font-weight:700;}
+  .top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+  .top-bar .agency-name{font-weight:800;font-size:16px;}
+  .hidden{display:none;}
+  .csv-guide{font-size:12px;color:var(--ink-soft);line-height:1.6;background:#FBF6EF;border-radius:10px;padding:12px;margin-top:10px;}
+  .chip-group{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 11px;font-size:12px;cursor:pointer;color:var(--ink-soft);}
+  .chip.active{background:var(--salmon);color:#fff;border-color:var(--salmon);}
+  .act-btn{background:none;border:none;color:var(--salmon-deep);cursor:pointer;font-size:12px;font-weight:700;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 로그인 화면 -->
+  <div id="login-view">
+    <h1>기관 관리자 로그인</h1>
+    <div class="sub">북구 복지서비스 통합 안내 사이트 · 기관 계정으로 로그인하세요</div>
+    <div class="card">
+      <div class="field"><label>이메일</label><input type="email" id="login-email"></div>
+      <div class="field"><label>비밀번호</label><input type="password" id="login-pw"></div>
+      <button class="btn" id="btn-login">로그인</button>
+      <div class="msg error" id="login-msg"></div>
+    </div>
+  </div>
+
+  <!-- 관리자 화면 -->
+  <div id="main-view" class="hidden">
+    <div class="top-bar">
+      <div>
+        <div class="agency-name" id="agency-name-label"></div>
+        <div class="sub">서비스 등록·수정</div>
+      </div>
+      <button class="btn secondary" id="btn-logout">로그아웃</button>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;">CSV로 한꺼번에 등록</h3>
+      <input type="file" id="csv-file" accept=".csv">
+      <button class="btn secondary" id="btn-csv-upload" style="margin-top:10px;">CSV 업로드</button>
+      <div class="msg" id="csv-msg"></div>
+      <div class="csv-guide">
+        컬럼 순서(첫 줄은 제목 줄): <b>서비스명, 대분류, 설명, 문의처, 나이최소, 나이최대, 장애정도, 장애유형, 소득수준, 지역</b><br>
+        여러 값은 슬래시(/)로 구분. 조건 없으면 빈칸.<br>
+        예) 방문요양, 돌봄, 재가 어르신 방문 돌봄, 051-000-0000, 65, 120, 심한 장애/심하지 않은 장애, , 기초생활수급자, 구포1동/구포2동
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;" id="form-title">새 서비스 등록</h3>
+      <input type="hidden" id="edit-id">
+      <div class="row2">
+        <div class="field"><label>서비스명</label><input id="s-name"></div>
+        <div class="field"><label>대분류</label><input id="s-category" placeholder="예: 돌봄, 재활, 일자리"></div>
+      </div>
+      <div class="field"><label>설명</label><textarea id="s-desc"></textarea></div>
+      <div class="field"><label>문의처</label><input id="s-contact" placeholder="전화번호 등"></div>
+      <div class="row2">
+        <div class="field"><label>나이 최소</label><input type="number" id="s-agemin" placeholder="0"></div>
+        <div class="field"><label>나이 최대</label><input type="number" id="s-agemax" placeholder="120"></div>
+      </div>
+      <div class="field">
+        <label>장애정도</label>
+        <div class="chip-group" id="s-level"></div>
+      </div>
+      <div class="field">
+        <label>장애유형</label>
+        <div class="chip-group" id="s-type"></div>
+      </div>
+      <div class="field">
+        <label>소득수준</label>
+        <div class="chip-group" id="s-income"></div>
+      </div>
+      <div class="field">
+        <label>거주지역(동) — 선택 없으면 북구 전체</label>
+        <div class="chip-group" id="s-region"></div>
+      </div>
+      <button class="btn" id="btn-save">저장</button>
+      <button class="btn secondary hidden" id="btn-cancel-edit">취소</button>
+      <div class="msg" id="form-msg"></div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;">등록된 서비스 목록</h3>
+      <table>
+        <thead><tr><th>서비스명</th><th>대분류</th><th></th></tr></thead>
+        <tbody id="service-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { firebaseConfig } from "./firebase-config.js";
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const DISABILITY_TYPES = ["지체","뇌병변","시각","청각","언어","안면","신장","심장","호흡기","간","장루요루","뇌전증","지적","자폐성","정신"];
+const DISABILITY_LEVELS = ["심한 장애","심하지 않은 장애"];
+const INCOME_LEVELS = ["기초생활수급자","차상위계층","한부모가정"];
+const REGIONS = ["구포1동","구포2동","구포3동","금곡동","화명1동","화명2동","화명3동","덕천1동","덕천2동","덕천3동","만덕1동","만덕2동","만덕3동"];
+
+function buildChips(containerId, options){
+  const el = document.getElementById(containerId);
+  el.innerHTML = "";
+  options.forEach(opt => {
+    const chip = document.createElement("div");
+    chip.className = "chip";
+    chip.textContent = opt;
+    chip.dataset.value = opt;
+    chip.addEventListener("click", () => chip.classList.toggle("active"));
+    el.appendChild(chip);
+  });
+}
+buildChips("s-level", DISABILITY_LEVELS);
+buildChips("s-type", DISABILITY_TYPES);
+buildChips("s-income", INCOME_LEVELS);
+buildChips("s-region", REGIONS);
+
+function getActiveChips(containerId){
+  return [...document.querySelectorAll(`#${containerId} .chip.active`)].map(c => c.dataset.value);
+}
+function setActiveChips(containerId, values){
+  document.querySelectorAll(`#${containerId} .chip`).forEach(c => {
+    c.classList.toggle("active", (values||[]).includes(c.dataset.value));
+  });
+}
+
+let currentUid = null;
+let currentAgencyName = "";
+
+// ===== 로그인 상태 감지 =====
+onAuthStateChanged(auth, async (user) => {
+  if(user){
+    currentUid = user.uid;
+    const agencyDoc = await getDoc(doc(db, "agencies", user.uid));
+    currentAgencyName = agencyDoc.exists() ? agencyDoc.data().agencyName : user.email;
+    document.getElementById("agency-name-label").textContent = currentAgencyName;
+    document.getElementById("login-view").classList.add("hidden");
+    document.getElementById("main-view").classList.remove("hidden");
+    loadMyServices();
+  } else {
+    document.getElementById("login-view").classList.remove("hidden");
+    document.getElementById("main-view").classList.add("hidden");
+  }
+});
+
+document.getElementById("btn-login").addEventListener("click", async () => {
+  const email = document.getElementById("login-email").value.trim();
+  const pw = document.getElementById("login-pw").value;
+  const msg = document.getElementById("login-msg");
+  msg.textContent = "";
+  try{
+    await signInWithEmailAndPassword(auth, email, pw);
+  }catch(e){
+    msg.textContent = "로그인 실패: 이메일 또는 비밀번호를 확인하세요.";
+  }
+});
+
+document.getElementById("btn-logout").addEventListener("click", () => signOut(auth));
+
+// ===== 서비스 등록/수정 =====
+function resetForm(){
+  document.getElementById("edit-id").value = "";
+  document.getElementById("s-name").value = "";
+  document.getElementById("s-category").value = "";
+  document.getElementById("s-desc").value = "";
+  document.getElementById("s-contact").value = "";
+  document.getElementById("s-agemin").value = "";
+  document.getElementById("s-agemax").value = "";
+  setActiveChips("s-level", []);
+  setActiveChips("s-type", []);
+  setActiveChips("s-income", []);
+  setActiveChips("s-region", []);
+  document.getElementById("form-title").textContent = "새 서비스 등록";
+  document.getElementById("btn-cancel-edit").classList.add("hidden");
+}
+
+document.getElementById("btn-cancel-edit").addEventListener("click", resetForm);
+
+document.getElementById("btn-save").addEventListener("click", async () => {
+  const msg = document.getElementById("form-msg");
+  msg.className = "msg";
+  const name = document.getElementById("s-name").value.trim();
+  if(!name){ msg.textContent = "서비스명을 입력하세요."; msg.classList.add("error"); return; }
+
+  const payload = {
+    agencyId: currentUid,
+    agencyName: currentAgencyName,
+    name,
+    category: document.getElementById("s-category").value.trim(),
+    description: document.getElementById("s-desc").value.trim(),
+    contact: document.getElementById("s-contact").value.trim(),
+    ageMin: document.getElementById("s-agemin").value === "" ? 0 : Number(document.getElementById("s-agemin").value),
+    ageMax: document.getElementById("s-agemax").value === "" ? 120 : Number(document.getElementById("s-agemax").value),
+    disabilityLevel: getActiveChips("s-level"),
+    disabilityTypes: getActiveChips("s-type"),
+    incomeLevels: getActiveChips("s-income"),
+    regions: getActiveChips("s-region"),
+    updatedAt: serverTimestamp()
+  };
+
+  const editId = document.getElementById("edit-id").value;
+  try{
+    if(editId){
+      await updateDoc(doc(db, "services", editId), payload);
+      msg.textContent = "수정되었습니다.";
+    } else {
+      payload.createdAt = serverTimestamp();
+      await addDoc(collection(db, "services"), payload);
+      msg.textContent = "등록되었습니다.";
+    }
+    msg.classList.add("ok");
+    resetForm();
+    loadMyServices();
+  }catch(e){
+    msg.textContent = "저장 실패: " + e.message;
+    msg.classList.add("error");
+  }
+});
+
+async function loadMyServices(){
+  const q = query(collection(db, "services"), where("agencyId", "==", currentUid));
+  const snap = await getDocs(q);
+  const tbody = document.getElementById("service-tbody");
+  tbody.innerHTML = "";
+  snap.docs.forEach(d => {
+    const s = d.data();
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${s.name}</td>
+      <td>${s.category || ""}</td>
+      <td>
+        <button class="act-btn" data-act="edit" data-id="${d.id}">수정</button>
+        &nbsp;
+        <button class="act-btn" data-act="delete" data-id="${d.id}" style="color:#D96F58;">삭제</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll("[data-act=edit]").forEach(btn => {
+    btn.addEventListener("click", () => editService(btn.dataset.id, snap.docs));
+  });
+  tbody.querySelectorAll("[data-act=delete]").forEach(btn => {
+    btn.addEventListener("click", () => deleteService(btn.dataset.id));
+  });
+}
+
+function editService(id, docs){
+  const d = docs.find(x => x.id === id);
+  const s = d.data();
+  document.getElementById("edit-id").value = id;
+  document.getElementById("s-name").value = s.name || "";
+  document.getElementById("s-category").value = s.category || "";
+  document.getElementById("s-desc").value = s.description || "";
+  document.getElementById("s-contact").value = s.contact || "";
+  document.getElementById("s-agemin").value = s.ageMin ?? "";
+  document.getElementById("s-agemax").value = s.ageMax ?? "";
+  setActiveChips("s-level", s.disabilityLevel);
+  setActiveChips("s-type", s.disabilityTypes);
+  setActiveChips("s-income", s.incomeLevels);
+  setActiveChips("s-region", s.regions);
+  document.getElementById("form-title").textContent = "서비스 수정";
+  document.getElementById("btn-cancel-edit").classList.remove("hidden");
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+async function deleteService(id){
+  if(!confirm("이 서비스를 삭제할까요?")) return;
+  await deleteDoc(doc(db, "services", id));
+  loadMyServices();
+}
+
+// ===== CSV 업로드 =====
+document.getElementById("btn-csv-upload").addEventListener("click", () => {
+  const fileInput = document.getElementById("csv-file");
+  const msg = document.getElementById("csv-msg");
+  msg.className = "msg";
+  if(!fileInput.files.length){ msg.textContent = "CSV 파일을 선택하세요."; msg.classList.add("error"); return; }
+
+  Papa.parse(fileInput.files[0], {
+    header: true,
+    skipEmptyLines: true,
+    encoding: "UTF-8",
+    complete: async (results) => {
+      try{
+        const batch = writeBatch(db);
+        let count = 0;
+        results.data.forEach(row => {
+          const name = (row["서비스명"] || "").trim();
+          if(!name) return;
+          const ref = doc(collection(db, "services"));
+          batch.set(ref, {
+            agencyId: currentUid,
+            agencyName: currentAgencyName,
+            name,
+            category: (row["대분류"]||"").trim(),
+            description: (row["설명"]||"").trim(),
+            contact: (row["문의처"]||"").trim(),
+            ageMin: row["나이최소"] ? Number(row["나이최소"]) : 0,
+            ageMax: row["나이최대"] ? Number(row["나이최대"]) : 120,
+            disabilityLevel: splitField(row["장애정도"]),
+            disabilityTypes: splitField(row["장애유형"]),
+            incomeLevels: splitField(row["소득수준"]),
+            regions: splitField(row["지역"]),
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          });
+          count++;
+        });
+        await batch.commit();
+        msg.textContent = `${count}건 업로드 완료`;
+        msg.classList.add("ok");
+        loadMyServices();
+      }catch(e){
+        msg.textContent = "업로드 실패: " + e.message;
+        msg.classList.add("error");
+      }
+    }
+  });
+});
+
+function splitField(val){
+  if(!val) return [];
+  return val.split("/").map(v => v.trim()).filter(Boolean);
+}
+</script>
+</body>
+</html>
