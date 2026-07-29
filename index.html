@@ -384,7 +384,12 @@ let allServices = [];
 async function loadServices(){
   const snap = await getDocs(collection(db, "services"));
   allServices = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  allServices.sort((a, b) => (a.name || "").localeCompare(b.name || "", "ko"));
+  allServices.sort((a, b) => {
+    const aClosed = a.status === "종결" ? 1 : 0;
+    const bClosed = b.status === "종결" ? 1 : 0;
+    if(aClosed !== bClosed) return aClosed - bClosed;
+    return (a.name || "").localeCompare(b.name || "", "ko");
+  });
 
   const agencySel = document.getElementById("f-agency");
   const agencies = [...new Set(allServices.map(s => s.agencyName).filter(Boolean))];
