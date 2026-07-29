@@ -261,21 +261,30 @@
     <div class="field" style="margin-bottom:14px;">
       <label>지원영역 <span style="font-weight:400; color:var(--ink-soft);">(중복 선택 가능)</span></label>
       <div class="chip-group" id="f-area"></div>
+      <div style="font-size:12px; color:var(--ink-soft); margin-top:5px;">선택하지 않으면 전체 지원영역을 검색해요</div>
     </div>
 
     <div class="field" style="margin-bottom:14px;">
       <label>장애유형 <span style="font-weight:400; color:var(--ink-soft);">(중복 선택 가능)</span></label>
       <div class="chip-group" id="f-type"></div>
+      <div style="font-size:12px; color:var(--ink-soft); margin-top:5px;">선택하지 않으면 전체 장애유형을 검색해요</div>
     </div>
 
     <div class="field" style="margin-bottom:14px;">
       <label>장애정도 <span style="font-weight:400; color:var(--ink-soft);">(중복 선택 가능)</span></label>
       <div class="chip-group" id="f-level"></div>
+      <div style="font-size:12px; color:var(--ink-soft); margin-top:5px;">선택하지 않으면 전체 장애정도를 검색해요</div>
+    </div>
+
+    <div class="field" style="margin-bottom:14px;">
+      <label>소득 수준 <span style="font-weight:400; color:var(--ink-soft);">(중복 선택 가능)</span></label>
+      <div class="chip-group" id="f-income"></div>
+      <div style="font-size:12px; color:var(--ink-soft); margin-top:5px;">선택하지 않으면 전체 소득수준을 검색해요</div>
     </div>
 
     <div class="field" style="margin-bottom:0;">
-      <label>소득 수준 <span style="font-weight:400; color:var(--ink-soft);">(중복 선택 가능)</span></label>
-      <div class="chip-group" id="f-income"></div>
+      <label>기관</label>
+      <select id="f-agency"><option value="">전체 기관</option></select>
     </div>
 
     <div class="filter-actions">
@@ -323,10 +332,10 @@ const REGIONS = {
   "사상구": ["삼락동","모라1동","모라3동","덕포1동","덕포2동","괘법동","감전동","주례1동","주례2동","주례3동","학장동","엄궁동"],
   "기장군": ["기장읍","장안읍","정관읍","일광읍","철마면"]
 };
-const DISABILITY_TYPES = ["지체","뇌병변","시각","청각","언어","안면","신장","심장","호흡기","간","장루요루","뇌전증","지적","자폐성","정신","췌장"];
+const DISABILITY_TYPES = ["지체","뇌병변","시각","청각","언어","안면","신장","심장","호흡기","간","장루요루","뇌전증","지적","자폐성","정신","췌장","비장애"];
 const DISABILITY_LEVELS = ["심한 장애","심하지 않은 장애"];
 const INCOME_LEVELS = ["기초생활수급자","차상위계층","한부모가정"];
-const SUPPORT_AREAS = ["주거","보건의료","돌봄","여가","정신건강","사회참여"];
+const SUPPORT_AREAS = ["주거","보건의료","돌봄","여가","정신건강","사회참여","기타"];
 
 const guSel = document.getElementById("f-gu");
 const dongSel = document.getElementById("f-dong");
@@ -374,6 +383,16 @@ async function loadServices(){
   const snap = await getDocs(collection(db, "services"));
   allServices = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   allServices.sort((a, b) => (a.name || "").localeCompare(b.name || "", "ko"));
+
+  const agencySel = document.getElementById("f-agency");
+  const agencies = [...new Set(allServices.map(s => s.agencyName).filter(Boolean))];
+  agencies.sort((a, b) => a.localeCompare(b, "ko"));
+  agencies.forEach(name => {
+    const o = document.createElement("option");
+    o.value = name; o.textContent = name;
+    agencySel.appendChild(o);
+  });
+
   render();
 }
 
@@ -385,6 +404,9 @@ function matches(svc){
   const typeSel = getActiveChips("f-type");
   const levelSel = getActiveChips("f-level");
   const incomeSel = getActiveChips("f-income");
+  const agency = document.getElementById("f-agency").value;
+
+  if(agency && svc.agencyName !== agency) return false;
 
   // 출생연도 -> 나이로 환산, 서비스에 범위가 없으면(0~120) 전체 허용
   if(birthYear !== ""){
@@ -454,6 +476,7 @@ function openModal(svc){
     <h2>${svc.name}</h2>
     <div class="agency">${svc.agencyName}</div>
     <div class="row"><div class="k">서비스 내용</div><div class="v">${svc.description || "상세 설명이 없습니다."}</div></div>
+    ${svc.partnerOrg ? `<div class="row"><div class="k">연계기관</div><div class="v">${svc.partnerOrg}</div></div>` : ""}
     <div class="row"><div class="k">대상 조건</div><div class="v">${conditionSummary(svc)}</div></div>
     <div class="row"><div class="k">문의</div><div class="v">${svc.contact || "문의처 미등록"}</div></div>
     <button class="modal-close" id="modal-close-btn">닫기</button>
@@ -481,11 +504,13 @@ function conditionSummary(svc){
 
 document.getElementById("f-birthyear").addEventListener("input", render);
 document.getElementById("f-dong").addEventListener("change", render);
+document.getElementById("f-agency").addEventListener("change", render);
 document.getElementById("btn-search").addEventListener("click", render);
 document.getElementById("btn-reset").addEventListener("click", () => {
   document.getElementById("f-birthyear").value = "";
   guSel.value = "";
   dongSel.innerHTML = `<option value="">동 전체</option>`;
+  document.getElementById("f-agency").value = "";
   document.querySelectorAll(".chip.active").forEach(c => c.classList.remove("active"));
   render();
 });
