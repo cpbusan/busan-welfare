@@ -225,8 +225,8 @@
 <body>
 
 <header>
-  <div class="eyebrow">BUSAN BUK-GU</div>
-  <h1>북구 복지서비스 찾기</h1>
+  <div class="eyebrow">고령장애인의 건강한 일상을 지원하는</div>
+  <h1>부산형 고령장애인통합돌봄체계 구축사업</h1>
   <p>조건을 선택하면 받을 수 있는 복지서비스를 바로 확인할 수 있어요</p>
 </header>
 
@@ -235,20 +235,26 @@
   <div class="filter-box">
     <div class="filter-row">
       <div class="field">
-        <label>나이</label>
-        <input type="number" id="f-age" placeholder="예: 68" min="0" max="120">
+        <label>출생연도</label>
+        <input type="number" id="f-birthyear" placeholder="예: 1958" min="1900" max="2026">
       </div>
       <div class="field">
-        <label>거주 지역(동)</label>
-        <select id="f-region">
-          <option value="">전체</option>
-        </select>
+        <label>거주 지역</label>
+        <div style="display:flex; gap:6px;">
+          <select id="f-gu" style="flex:1;"><option value="">구/군 선택</option></select>
+          <select id="f-dong" style="flex:1;"><option value="">동 전체</option></select>
+        </div>
       </div>
     </div>
 
     <div class="field" style="margin-bottom:14px;">
-      <label>장애유형·정도</label>
-      <div class="chip-group" id="f-disability"></div>
+      <label>장애유형</label>
+      <div class="chip-group" id="f-type"></div>
+    </div>
+
+    <div class="field" style="margin-bottom:14px;">
+      <label>장애정도</label>
+      <div class="chip-group" id="f-level"></div>
     </div>
 
     <div class="field" style="margin-bottom:0;">
@@ -282,19 +288,46 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // ===== 옵션 정의 =====
-const REGIONS = ["구포1동","구포2동","구포3동","금곡동","화명1동","화명2동","화명3동","덕천1동","덕천2동","덕천3동","만덕1동","만덕2동","만덕3동"];
+const REGIONS = {
+  "중구": ["중앙동","동광동","대청동","보수동","부평동","광복동","남포동","영주1동","영주2동"],
+  "서구": ["동대신1동","동대신2동","동대신3동","서대신1동","서대신3동","서대신4동","부민동","아미동","초장동","충무동","남부민1동","남부민2동","암남동"],
+  "동구": ["초량1동","초량2동","초량3동","초량6동","수정1동","수정2동","수정4동","수정5동","좌천동","범일1동","범일2동","범일5동"],
+  "영도구": ["남항동","영선1동","영선2동","신선동","봉래1동","봉래2동","청학1동","청학2동","동삼1동","동삼2동","동삼3동"],
+  "부산진구": ["부전1동","부전2동","연지동","초읍동","양정1동","양정2동","전포1동","전포2동","부암1동","부암3동","당감1동","당감2동","당감4동","가야1동","가야2동","개금1동","개금2동","개금3동","범천1동","범천2동"],
+  "동래구": ["수민동","복산동","명륜동","온천1동","온천2동","온천3동","사직1동","사직2동","사직3동","안락1동","안락2동","명장1동","명장2동"],
+  "남구": ["대연1동","대연3동","대연4동","대연5동","대연6동","용호1동","용호2동","용호3동","용호4동","용당동","감만1동","감만2동","우암동","문현1동","문현2동","문현3동","문현4동"],
+  "북구": ["구포1동","구포2동","구포3동","금곡동","화명1동","화명2동","화명3동","덕천1동","덕천2동","덕천3동","만덕1동","만덕2동","만덕3동"],
+  "해운대구": ["우1동","우2동","우3동","중1동","중2동","좌1동","좌2동","좌3동","좌4동","송정동","반여1동","반여2동","반여3동","반여4동","반송1동","반송2동","재송1동","재송2동"],
+  "사하구": ["괴정1동","괴정2동","괴정3동","괴정4동","당리동","하단1동","하단2동","신평1동","신평2동","장림1동","장림2동","다대1동","다대2동","구평동","감천1동","감천2동"],
+  "금정구": ["서1동","서2동","서3동","금사회동동","부곡1동","부곡2동","부곡3동","부곡4동","장전1동","장전2동","선두구동","청룡노포동","남산동","구서1동","구서2동","금성동"],
+  "강서구": ["대저1동","대저2동","강동동","명지1동","명지2동","가락동","녹산동","가덕도동"],
+  "연제구": ["거제1동","거제2동","거제3동","거제4동","연산1동","연산2동","연산3동","연산4동","연산5동","연산6동","연산8동","연산9동"],
+  "수영구": ["남천1동","남천2동","수영동","망미1동","망미2동","광안1동","광안2동","광안3동","광안4동","민락동"],
+  "사상구": ["삼락동","모라1동","모라3동","덕포1동","덕포2동","괘법동","감전동","주례1동","주례2동","주례3동","학장동","엄궁동"],
+  "기장군": ["기장읍","장안읍","정관읍","일광읍","철마면"]
+};
 const DISABILITY_TYPES = ["지체","뇌병변","시각","청각","언어","안면","신장","심장","호흡기","간","장루요루","뇌전증","지적","자폐성","정신"];
 const DISABILITY_LEVELS = ["심한 장애","심하지 않은 장애"];
 const INCOME_LEVELS = ["기초생활수급자","차상위계층","한부모가정"];
 
-const regionSel = document.getElementById("f-region");
-REGIONS.forEach(r => {
+const guSel = document.getElementById("f-gu");
+const dongSel = document.getElementById("f-dong");
+Object.keys(REGIONS).forEach(gu => {
   const o = document.createElement("option");
-  o.value = r; o.textContent = r;
-  regionSel.appendChild(o);
+  o.value = gu; o.textContent = gu;
+  guSel.appendChild(o);
+});
+guSel.addEventListener("change", () => {
+  dongSel.innerHTML = `<option value="">동 전체</option>`;
+  (REGIONS[guSel.value] || []).forEach(dong => {
+    const o = document.createElement("option");
+    o.value = dong; o.textContent = dong;
+    dongSel.appendChild(o);
+  });
+  render();
 });
 
-function buildChips(containerId, options, groupKey){
+function buildChips(containerId, options){
   const el = document.getElementById(containerId);
   options.forEach(opt => {
     const chip = document.createElement("div");
@@ -308,8 +341,9 @@ function buildChips(containerId, options, groupKey){
     el.appendChild(chip);
   });
 }
-buildChips("f-disability", [...DISABILITY_LEVELS, ...DISABILITY_TYPES], "disability");
-buildChips("f-income", INCOME_LEVELS, "income");
+buildChips("f-type", DISABILITY_TYPES);
+buildChips("f-level", DISABILITY_LEVELS);
+buildChips("f-income", INCOME_LEVELS);
 
 function getActiveChips(containerId){
   return [...document.querySelectorAll(`#${containerId} .chip.active`)].map(c => c.dataset.value);
@@ -324,24 +358,36 @@ async function loadServices(){
 }
 
 function matches(svc){
-  const age = document.getElementById("f-age").value;
-  const region = document.getElementById("f-region").value;
-  const disabilitySel = getActiveChips("f-disability");
+  const birthYear = document.getElementById("f-birthyear").value;
+  const gu = guSel.value;
+  const dong = dongSel.value;
+  const typeSel = getActiveChips("f-type");
+  const levelSel = getActiveChips("f-level");
   const incomeSel = getActiveChips("f-income");
 
-  // 나이: 서비스에 범위가 없으면(0~120) 전체 허용
-  if(age !== ""){
-    const a = Number(age);
+  // 출생연도 -> 나이로 환산, 서비스에 범위가 없으면(0~120) 전체 허용
+  if(birthYear !== ""){
+    const age = new Date().getFullYear() - Number(birthYear);
     const min = svc.ageMin ?? 0, max = svc.ageMax ?? 120;
-    if(a < min || a > max) return false;
+    if(age < min || age > max) return false;
   }
-  // 지역: 서비스 regions가 비어있으면 전체 허용, 아니면 선택 지역 포함해야 함
-  if(region && svc.regions && svc.regions.length > 0 && !svc.regions.includes(region)) return false;
-
-  // 장애유형·정도: 선택한 게 있으면, 서비스 조건이 비어있거나(무관) 겹치는 게 있어야 함
-  if(disabilitySel.length > 0){
-    const svcD = [...(svc.disabilityLevel||[]), ...(svc.disabilityTypes||[])];
-    if(svcD.length > 0 && !disabilitySel.some(v => svcD.includes(v))) return false;
+  // 지역: 서비스 regions가 비어있으면 전체 허용
+  if(svc.regions && svc.regions.length > 0){
+    if(dong){
+      if(!svc.regions.includes(`${gu} ${dong}`)) return false;
+    } else if(gu){
+      if(!svc.regions.some(r => r.startsWith(gu + " "))) return false;
+    }
+  }
+  // 장애유형
+  if(typeSel.length > 0){
+    const svcT = svc.disabilityTypes || [];
+    if(svcT.length > 0 && !typeSel.some(v => svcT.includes(v))) return false;
+  }
+  // 장애정도
+  if(levelSel.length > 0){
+    const svcL = svc.disabilityLevel || [];
+    if(svcL.length > 0 && !levelSel.some(v => svcL.includes(v))) return false;
   }
   // 소득수준
   if(incomeSel.length > 0){
@@ -398,18 +444,19 @@ function conditionSummary(svc){
   if(svc.ageMin != null || svc.ageMax != null){
     parts.push(`나이 ${svc.ageMin ?? 0}~${svc.ageMax ?? 120}세`);
   }
-  if(svc.disabilityLevel?.length) parts.push(svc.disabilityLevel.join("/"));
   if(svc.disabilityTypes?.length) parts.push(svc.disabilityTypes.join(","));
+  if(svc.disabilityLevel?.length) parts.push(svc.disabilityLevel.join("/"));
   if(svc.incomeLevels?.length) parts.push(svc.incomeLevels.join(","));
   if(svc.regions?.length) parts.push(svc.regions.join(","));
   return parts.length ? parts.join(" · ") : "조건 무관(전체 대상)";
 }
 
-document.getElementById("f-age").addEventListener("input", render);
-document.getElementById("f-region").addEventListener("change", render);
+document.getElementById("f-birthyear").addEventListener("input", render);
+document.getElementById("f-dong").addEventListener("change", render);
 document.getElementById("btn-reset").addEventListener("click", () => {
-  document.getElementById("f-age").value = "";
-  document.getElementById("f-region").value = "";
+  document.getElementById("f-birthyear").value = "";
+  guSel.value = "";
+  dongSel.innerHTML = `<option value="">동 전체</option>`;
   document.querySelectorAll(".chip.active").forEach(c => c.classList.remove("active"));
   render();
 });
