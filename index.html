@@ -470,22 +470,30 @@ const BADGE_PALETTE = [
   { bg:"#F2EFE3", fg:"#8A7B3F" }, // 카키
   { bg:"#EAEAF5", fg:"#5B5FA8" }, // 인디고
 ];
+// 지원영역은 값 종류가 정해져 있어 겹치지 않도록 고정 매핑
+const AREA_COLOR_MAP = {
+  "주거": BADGE_PALETTE[1],
+  "보건의료": BADGE_PALETTE[0],
+  "돌봄": BADGE_PALETTE[7],
+  "여가": BADGE_PALETTE[3],
+  "정신건강": BADGE_PALETTE[4],
+  "사회참여": BADGE_PALETTE[5],
+  "기타": BADGE_PALETTE[6],
+};
 function badgeColor(text){
+  if(AREA_COLOR_MAP[text]) return AREA_COLOR_MAP[text];
   let hash = 0;
   for(let i = 0; i < text.length; i++) hash = (hash * 31 + text.charCodeAt(i)) >>> 0;
   return BADGE_PALETTE[hash % BADGE_PALETTE.length];
 }
 
 function cardHtml(svc){
-  const catLabel = svc.category || "일반복지";
-  const catColor = badgeColor(catLabel);
   const areaBadges = (svc.supportAreas || []).map(area => {
     const c = badgeColor(area);
     return `<span class="badge" style="background:${c.bg}; color:${c.fg};">${area}</span>`;
   }).join("");
   return `
     <div class="card" id="card-${svc.id}">
-      <span class="badge" style="background:${catColor.bg}; color:${catColor.fg};">${catLabel}</span>
       ${areaBadges}
       <h3>${svc.name || ""}</h3>
       <div class="agency">${svc.agencyName || ""}</div>
