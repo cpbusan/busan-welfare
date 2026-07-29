@@ -54,7 +54,10 @@
     <h1>기관 관리자 로그인</h1>
     <div class="sub">북구 복지서비스 통합 안내 사이트 · 기관 계정으로 로그인하세요</div>
     <div class="card">
-      <div class="field"><label>이메일</label><input type="email" id="login-email"></div>
+      <div class="field">
+        <label>이메일</label>
+        <input type="email" id="login-email">
+      </div>
       <div class="field"><label>비밀번호</label><input type="password" id="login-pw"></div>
       <button class="btn" id="btn-login">로그인</button>
       <div class="msg error" id="login-msg"></div>
@@ -72,14 +75,23 @@
     </div>
 
     <div class="card">
+      <h3 style="margin-top:0;">비밀번호 변경</h3>
+      <div class="field"><label>현재 비밀번호</label><input type="password" id="pw-current"></div>
+      <div class="field"><label>새 비밀번호</label><input type="password" id="pw-new" placeholder="6자 이상"></div>
+      <div class="field"><label>새 비밀번호 확인</label><input type="password" id="pw-confirm"></div>
+      <button class="btn secondary" id="btn-change-pw">비밀번호 변경</button>
+      <div class="msg" id="pw-msg"></div>
+    </div>
+
+    <div class="card">
       <h3 style="margin-top:0;">CSV로 한꺼번에 등록</h3>
       <input type="file" id="csv-file" accept=".csv">
       <button class="btn secondary" id="btn-csv-upload" style="margin-top:10px;">CSV 업로드</button>
       <div class="msg" id="csv-msg"></div>
       <div class="csv-guide">
-        컬럼 순서(첫 줄은 제목 줄): <b>서비스명, 대분류, 설명, 문의처, 나이최소, 나이최대, 장애정도, 장애유형, 소득수준, 지역</b><br>
-        여러 값은 슬래시(/)로 구분. 조건 없으면 빈칸.<br>
-        예) 방문요양, 돌봄, 재가 어르신 방문 돌봄, 051-000-0000, 65, 120, 심한 장애/심하지 않은 장애, , 기초생활수급자, 구포1동/구포2동
+        컬럼 순서(첫 줄은 제목 줄): <b>서비스명, 대분류, 설명, 문의처, 나이최소, 나이최대, 장애유형, 장애정도, 소득수준, 지역</b><br>
+        여러 값은 슬래시(/)로 구분. 지역은 "구 동" 형식으로 띄어써서 입력. 조건 없으면 빈칸.<br>
+        예) 방문요양, 돌봄, 재가 어르신 방문 돌봄, 051-000-0000, 65, 120, , 심한 장애/심하지 않은 장애, 기초생활수급자, 북구 구포1동/북구 구포2동
       </div>
     </div>
 
@@ -97,20 +109,24 @@
         <div class="field"><label>나이 최대</label><input type="number" id="s-agemax" placeholder="120"></div>
       </div>
       <div class="field">
-        <label>장애정도</label>
-        <div class="chip-group" id="s-level"></div>
-      </div>
-      <div class="field">
         <label>장애유형</label>
         <div class="chip-group" id="s-type"></div>
+      </div>
+      <div class="field">
+        <label>장애정도</label>
+        <div class="chip-group" id="s-level"></div>
       </div>
       <div class="field">
         <label>소득수준</label>
         <div class="chip-group" id="s-income"></div>
       </div>
       <div class="field">
-        <label>거주지역(동) — 선택 없으면 북구 전체</label>
-        <div class="chip-group" id="s-region"></div>
+        <label>거주지역 — 구 선택 후 동을 눌러 추가 (선택 없으면 전체 지역)</label>
+        <div style="display:flex; gap:6px; margin-bottom:8px;">
+          <select id="s-region-gu" style="flex:1;"><option value="">구/군 선택</option></select>
+        </div>
+        <div class="chip-group" id="s-region-dong"></div>
+        <div class="chip-group" id="s-region-selected" style="margin-top:8px;"></div>
       </div>
       <button class="btn" id="btn-save">저장</button>
       <button class="btn secondary hidden" id="btn-cancel-edit">취소</button>
@@ -131,7 +147,7 @@
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
@@ -142,7 +158,69 @@ const db = getFirestore(app);
 const DISABILITY_TYPES = ["지체","뇌병변","시각","청각","언어","안면","신장","심장","호흡기","간","장루요루","뇌전증","지적","자폐성","정신"];
 const DISABILITY_LEVELS = ["심한 장애","심하지 않은 장애"];
 const INCOME_LEVELS = ["기초생활수급자","차상위계층","한부모가정"];
-const REGIONS = ["구포1동","구포2동","구포3동","금곡동","화명1동","화명2동","화명3동","덕천1동","덕천2동","덕천3동","만덕1동","만덕2동","만덕3동"];
+const REGIONS = {
+  "중구": ["중앙동","동광동","대청동","보수동","부평동","광복동","남포동","영주1동","영주2동"],
+  "서구": ["동대신1동","동대신2동","동대신3동","서대신1동","서대신3동","서대신4동","부민동","아미동","초장동","충무동","남부민1동","남부민2동","암남동"],
+  "동구": ["초량1동","초량2동","초량3동","초량6동","수정1동","수정2동","수정4동","수정5동","좌천동","범일1동","범일2동","범일5동"],
+  "영도구": ["남항동","영선1동","영선2동","신선동","봉래1동","봉래2동","청학1동","청학2동","동삼1동","동삼2동","동삼3동"],
+  "부산진구": ["부전1동","부전2동","연지동","초읍동","양정1동","양정2동","전포1동","전포2동","부암1동","부암3동","당감1동","당감2동","당감4동","가야1동","가야2동","개금1동","개금2동","개금3동","범천1동","범천2동"],
+  "동래구": ["수민동","복산동","명륜동","온천1동","온천2동","온천3동","사직1동","사직2동","사직3동","안락1동","안락2동","명장1동","명장2동"],
+  "남구": ["대연1동","대연3동","대연4동","대연5동","대연6동","용호1동","용호2동","용호3동","용호4동","용당동","감만1동","감만2동","우암동","문현1동","문현2동","문현3동","문현4동"],
+  "북구": ["구포1동","구포2동","구포3동","금곡동","화명1동","화명2동","화명3동","덕천1동","덕천2동","덕천3동","만덕1동","만덕2동","만덕3동"],
+  "해운대구": ["우1동","우2동","우3동","중1동","중2동","좌1동","좌2동","좌3동","좌4동","송정동","반여1동","반여2동","반여3동","반여4동","반송1동","반송2동","재송1동","재송2동"],
+  "사하구": ["괴정1동","괴정2동","괴정3동","괴정4동","당리동","하단1동","하단2동","신평1동","신평2동","장림1동","장림2동","다대1동","다대2동","구평동","감천1동","감천2동"],
+  "금정구": ["서1동","서2동","서3동","금사회동동","부곡1동","부곡2동","부곡3동","부곡4동","장전1동","장전2동","선두구동","청룡노포동","남산동","구서1동","구서2동","금성동"],
+  "강서구": ["대저1동","대저2동","강동동","명지1동","명지2동","가락동","녹산동","가덕도동"],
+  "연제구": ["거제1동","거제2동","거제3동","거제4동","연산1동","연산2동","연산3동","연산4동","연산5동","연산6동","연산8동","연산9동"],
+  "수영구": ["남천1동","남천2동","수영동","망미1동","망미2동","광안1동","광안2동","광안3동","광안4동","민락동"],
+  "사상구": ["삼락동","모라1동","모라3동","덕포1동","덕포2동","괘법동","감전동","주례1동","주례2동","주례3동","학장동","엄궁동"],
+  "기장군": ["기장읍","장안읍","정관읍","일광읍","철마면"]
+};
+
+let selectedRegions = new Set();
+
+const guSel = document.getElementById("s-region-gu");
+Object.keys(REGIONS).forEach(gu => {
+  const o = document.createElement("option");
+  o.value = gu; o.textContent = gu;
+  guSel.appendChild(o);
+});
+guSel.addEventListener("change", renderDongChips);
+
+function renderDongChips(){
+  const dongEl = document.getElementById("s-region-dong");
+  dongEl.innerHTML = "";
+  const gu = guSel.value;
+  (REGIONS[gu] || []).forEach(dong => {
+    const key = `${gu} ${dong}`;
+    const chip = document.createElement("div");
+    chip.className = "chip" + (selectedRegions.has(key) ? " active" : "");
+    chip.textContent = dong;
+    chip.addEventListener("click", () => {
+      if(selectedRegions.has(key)) selectedRegions.delete(key);
+      else selectedRegions.add(key);
+      renderDongChips();
+      renderSelectedRegions();
+    });
+    dongEl.appendChild(chip);
+  });
+}
+
+function renderSelectedRegions(){
+  const el = document.getElementById("s-region-selected");
+  el.innerHTML = "";
+  [...selectedRegions].forEach(key => {
+    const chip = document.createElement("div");
+    chip.className = "chip active";
+    chip.textContent = key + " ✕";
+    chip.addEventListener("click", () => {
+      selectedRegions.delete(key);
+      renderDongChips();
+      renderSelectedRegions();
+    });
+    el.appendChild(chip);
+  });
+}
 
 function buildChips(containerId, options){
   const el = document.getElementById(containerId);
@@ -159,7 +237,7 @@ function buildChips(containerId, options){
 buildChips("s-level", DISABILITY_LEVELS);
 buildChips("s-type", DISABILITY_TYPES);
 buildChips("s-income", INCOME_LEVELS);
-buildChips("s-region", REGIONS);
+renderDongChips();
 
 function getActiveChips(containerId){
   return [...document.querySelectorAll(`#${containerId} .chip.active`)].map(c => c.dataset.value);
@@ -203,6 +281,33 @@ document.getElementById("btn-login").addEventListener("click", async () => {
 
 document.getElementById("btn-logout").addEventListener("click", () => signOut(auth));
 
+// ===== 비밀번호 변경 =====
+document.getElementById("btn-change-pw").addEventListener("click", async () => {
+  const msg = document.getElementById("pw-msg");
+  msg.className = "msg";
+  const current = document.getElementById("pw-current").value;
+  const next = document.getElementById("pw-new").value;
+  const confirm = document.getElementById("pw-confirm").value;
+
+  if(next.length < 6){ msg.textContent = "새 비밀번호는 6자 이상이어야 합니다."; msg.classList.add("error"); return; }
+  if(next !== confirm){ msg.textContent = "새 비밀번호가 서로 다릅니다."; msg.classList.add("error"); return; }
+
+  try{
+    const user = auth.currentUser;
+    const credential = EmailAuthProvider.credential(user.email, current);
+    await reauthenticateWithCredential(user, credential);
+    await updatePassword(user, next);
+    msg.textContent = "비밀번호가 변경되었습니다.";
+    msg.classList.add("ok");
+    document.getElementById("pw-current").value = "";
+    document.getElementById("pw-new").value = "";
+    document.getElementById("pw-confirm").value = "";
+  }catch(e){
+    msg.textContent = "변경 실패: 현재 비밀번호를 확인하세요.";
+    msg.classList.add("error");
+  }
+});
+
 // ===== 서비스 등록/수정 =====
 function resetForm(){
   document.getElementById("edit-id").value = "";
@@ -215,7 +320,10 @@ function resetForm(){
   setActiveChips("s-level", []);
   setActiveChips("s-type", []);
   setActiveChips("s-income", []);
-  setActiveChips("s-region", []);
+  selectedRegions = new Set();
+  guSel.value = "";
+  renderDongChips();
+  renderSelectedRegions();
   document.getElementById("form-title").textContent = "새 서비스 등록";
   document.getElementById("btn-cancel-edit").classList.add("hidden");
 }
@@ -240,7 +348,7 @@ document.getElementById("btn-save").addEventListener("click", async () => {
     disabilityLevel: getActiveChips("s-level"),
     disabilityTypes: getActiveChips("s-type"),
     incomeLevels: getActiveChips("s-income"),
-    regions: getActiveChips("s-region"),
+    regions: [...selectedRegions],
     updatedAt: serverTimestamp()
   };
 
@@ -302,7 +410,10 @@ function editService(id, docs){
   setActiveChips("s-level", s.disabilityLevel);
   setActiveChips("s-type", s.disabilityTypes);
   setActiveChips("s-income", s.incomeLevels);
-  setActiveChips("s-region", s.regions);
+  selectedRegions = new Set(s.regions || []);
+  guSel.value = "";
+  renderDongChips();
+  renderSelectedRegions();
   document.getElementById("form-title").textContent = "서비스 수정";
   document.getElementById("btn-cancel-edit").classList.remove("hidden");
   window.scrollTo({top:0, behavior:"smooth"});
@@ -342,8 +453,8 @@ document.getElementById("btn-csv-upload").addEventListener("click", () => {
             contact: (row["문의처"]||"").trim(),
             ageMin: row["나이최소"] ? Number(row["나이최소"]) : 0,
             ageMax: row["나이최대"] ? Number(row["나이최대"]) : 120,
-            disabilityLevel: splitField(row["장애정도"]),
             disabilityTypes: splitField(row["장애유형"]),
+            disabilityLevel: splitField(row["장애정도"]),
             incomeLevels: splitField(row["소득수준"]),
             regions: splitField(row["지역"]),
             createdAt: serverTimestamp(),
