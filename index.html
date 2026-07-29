@@ -160,6 +160,7 @@
     padding:3px 10px;
     border-radius:999px;
     margin-bottom:8px;
+    margin-right:6px;
   }
   .card h3{
     margin:0 0 4px;
@@ -459,11 +460,33 @@ function render(){
   });
 }
 
+const BADGE_PALETTE = [
+  { bg:"#E4F0F7", fg:"#2E7FB0" }, // 블루
+  { bg:"#E8F3EA", fg:"#3F8A55" }, // 그린
+  { bg:"#F5EAF7", fg:"#8E4FA8" }, // 퍼플
+  { bg:"#FCEEE0", fg:"#C97A2B" }, // 오렌지
+  { bg:"#FCE8EC", fg:"#C24F6C" }, // 핑크
+  { bg:"#E7F3F3", fg:"#2E8C8C" }, // 틸
+  { bg:"#F2EFE3", fg:"#8A7B3F" }, // 카키
+  { bg:"#EAEAF5", fg:"#5B5FA8" }, // 인디고
+];
+function badgeColor(text){
+  let hash = 0;
+  for(let i = 0; i < text.length; i++) hash = (hash * 31 + text.charCodeAt(i)) >>> 0;
+  return BADGE_PALETTE[hash % BADGE_PALETTE.length];
+}
+
 function cardHtml(svc){
+  const catLabel = svc.category || "일반복지";
+  const catColor = badgeColor(catLabel);
+  const areaBadges = (svc.supportAreas || []).map(area => {
+    const c = badgeColor(area);
+    return `<span class="badge" style="background:${c.bg}; color:${c.fg};">${area}</span>`;
+  }).join("");
   return `
     <div class="card" id="card-${svc.id}">
-      <span class="badge">${svc.category || "일반복지"}</span>
-      ${svc.supportAreas?.length ? `<span class="badge" style="background:#EEF4F8; color:var(--ink-soft);">${svc.supportAreas.join(" · ")}</span>` : ""}
+      <span class="badge" style="background:${catColor.bg}; color:${catColor.fg};">${catLabel}</span>
+      ${areaBadges}
       <h3>${svc.name || ""}</h3>
       <div class="agency">${svc.agencyName || ""}</div>
       <div class="desc">${svc.description || ""}</div>
