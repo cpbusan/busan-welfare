@@ -89,6 +89,7 @@
       <h3 style="margin-top:0;">CSV로 한꺼번에 등록</h3>
       <input type="file" id="csv-file" accept=".csv">
       <button class="btn secondary" id="btn-csv-upload" style="margin-top:10px;">CSV 업로드</button>
+      <button class="btn secondary" id="btn-csv-template" style="margin-top:10px;">CSV 템플릿 다운로드</button>
       <div class="msg" id="csv-msg"></div>
       <div class="csv-guide">
         컬럼 순서(첫 줄은 제목 줄): <b>서비스명, 설명, 구분, 연계기관, 문의처, 지원영역, 나이최소, 나이최대, 장애유형, 장애정도, 소득수준, 지역</b><br>
@@ -474,6 +475,19 @@ async function deleteService(id){
 }
 
 // ===== CSV 업로드 =====
+document.getElementById("btn-csv-template").addEventListener("click", () => {
+  const header = "서비스명,설명,구분,연계기관,문의처,지원영역,나이최소,나이최대,장애유형,장애정도,소득수준,지역\n";
+  const blob = new Blob(["\uFEFF" + header], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "서비스등록_템플릿.csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
 document.getElementById("btn-csv-upload").addEventListener("click", () => {
   const fileInput = document.getElementById("csv-file");
   const msg = document.getElementById("csv-msg");
