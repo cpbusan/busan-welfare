@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 서비스 목록: 누구나 읽기 가능(공개 사이트), 쓰기는 본인 기관 데이터만
+    match /services/{serviceId} {
+      allow read: if true;
+      allow create: if request.auth != null
+                    && request.resource.data.agencyId == request.auth.uid;
+      allow update, delete: if request.auth != null
+                    && resource.data.agencyId == request.auth.uid;
+    }
+
+    // 기관 정보: 로그인한 사람만 자기 문서 읽기 (기관명 조회용)
+    match /agencies/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false; // 관리자(콩미)가 콘솔에서 직접 등록
+    }
+  }
+}
