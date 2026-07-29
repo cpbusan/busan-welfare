@@ -281,8 +281,9 @@ async function loadAgencyOptions(){
   const sel = document.getElementById("login-email");
   try{
     const snap = await getDocs(collection(db, "agencyLogins"));
-    snap.docs.forEach(d => {
-      const data = d.data();
+    const list = snap.docs.map(d => d.data());
+    list.sort((a, b) => (a.agencyName || "").localeCompare(b.agencyName || "", "ko"));
+    list.forEach(data => {
       agencyEmailMap[data.agencyName] = data.email;
       const o = document.createElement("option");
       o.value = data.agencyName;
