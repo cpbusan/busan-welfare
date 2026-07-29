@@ -44,6 +44,30 @@
   .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 11px;font-size:12px;cursor:pointer;color:var(--ink-soft);}
   .chip.active{background:var(--salmon);color:#fff;border-color:var(--salmon);}
   .act-btn{background:none;border:none;color:var(--salmon-deep);cursor:pointer;font-size:12px;font-weight:700;}
+  .group-block{border-bottom:1px solid var(--line);}
+  .group-block:last-child{border-bottom:none;}
+  .group-summary{
+    list-style:none;
+    cursor:pointer;
+    padding:12px 4px;
+    font-weight:700;
+    font-size:14px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    color:var(--ink);
+  }
+  .group-summary::-webkit-details-marker{display:none;}
+  .group-summary .arrow{
+    display:inline-block;
+    transition:transform .15s;
+    font-size:11px;
+    color:var(--ink-soft);
+  }
+  .group-block[open] .group-summary .arrow{transform:rotate(90deg);}
+  .group-summary .count{font-weight:400;color:var(--ink-soft);font-size:13px;}
+  .group-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px;}
+  .group-table td{padding:7px 6px;border-bottom:1px solid var(--line);}
 </style>
 </head>
 <body>
@@ -145,10 +169,7 @@
 
     <div class="card">
       <h3 style="margin-top:0;">등록된 서비스 목록</h3>
-      <table>
-        <thead><tr><th>구분</th><th>서비스명</th><th>연계기관</th><th></th></tr></thead>
-        <tbody id="service-tbody"></tbody>
-      </table>
+      <div id="service-groups"></div>
     </div>
   </div>
 
@@ -421,31 +442,51 @@ document.getElementById("btn-save").addEventListener("click", async () => {
 async function loadMyServices(){
   const q = query(collection(db, "services"), where("agencyId", "==", currentUid));
   const snap = await getDocs(q);
-  const docs = [...snap.docs].sort((a, b) => {
-    const t = (a.data().serviceType || "").localeCompare(b.data().serviceType || "", "ko");
-    if(t !== 0) return t;
-    return (a.data().name || "").localeCompare(b.data().name || "", "ko");
-  });
-  const tbody = document.getElementById("service-tbody");
-  tbody.innerHTML = "";
+  const docs = [...snap.docs].sort((a, b) => (a.data().name || "").localeCompare(b.data().name || "", "ko"));
+
+  // 구분별로 그룹핑
+  const groups = new Map();
   docs.forEach(d => {
-    const s = d.data();
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${s.serviceType || ""}</td>
-      <td>${s.name}</td>
-      <td>${s.partnerOrg || ""}</td>
-      <td>
-        <button class="act-btn" data-act="edit" data-id="${d.id}">수정</button>
-        &nbsp;
-        <button class="act-btn" data-act="delete" data-id="${d.id}" style="color:#2E7FB0;">삭제</button>
-      </td>`;
-    tbody.appendChild(tr);
+    const key = d.data().serviceType || "미분류";
+    if(!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(d);
   });
-  tbody.querySelectorAll("[data-act=edit]").forEach(btn => {
+  const groupKeys = [...groups.keys()].sort((a, b) => {
+    if(a === "미분류") return 1;
+    if(b === "미분류") return -1;
+    return a.localeCompare(b, "ko");
+  });
+
+  const container = document.getElementById("service-groups");
+  container.innerHTML = "";
+  groupKeys.forEach(key => {
+    const items = groups.get(key);
+    const details = document.createElement("details");
+    details.className = "group-block";
+    details.open = true;
+    details.innerHTML = `
+      <summary class="group-summary"><span class="arrow">▶</span> ${key} <span class="count">(${items.length})</span></summary>
+      <table class="group-table"><tbody>
+        ${items.map(d => {
+          const s = d.data();
+          return `<tr>
+            <td>${s.name}</td>
+            <td>${s.partnerOrg || ""}</td>
+            <td style="text-align:right; white-space:nowrap;">
+              <button class="act-btn" data-act="edit" data-id="${d.id}">수정</button>
+              &nbsp;
+              <button class="act-btn" data-act="delete" data-id="${d.id}" style="color:#2E7FB0;">삭제</button>
+            </td>
+          </tr>`;
+        }).join("")}
+      </tbody></table>`;
+    container.appendChild(details);
+  });
+
+  container.querySelectorAll("[data-act=edit]").forEach(btn => {
     btn.addEventListener("click", () => editService(btn.dataset.id, docs));
   });
-  tbody.querySelectorAll("[data-act=delete]").forEach(btn => {
+  container.querySelectorAll("[data-act=delete]").forEach(btn => {
     btn.addEventListener("click", () => deleteService(btn.dataset.id));
   });
 }
