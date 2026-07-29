@@ -106,15 +106,25 @@
   }
   .filter-actions{
     display:flex;
-    justify-content:flex-end;
+    justify-content:center;
     gap:8px;
     margin-top:6px;
+  }
+  .btn-search{
+    background:var(--salmon);
+    color:#fff;
+    border:none;
+    padding:9px 18px;
+    border-radius:10px;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
   }
   .btn-reset{
     background:none;
     border:1px solid var(--line);
     color:var(--ink-soft);
-    padding:8px 14px;
+    padding:9px 14px;
     border-radius:10px;
     font-size:13px;
     cursor:pointer;
@@ -269,6 +279,7 @@
     </div>
 
     <div class="filter-actions">
+      <button class="btn-search" id="btn-search">검색</button>
       <button class="btn-reset" id="btn-reset">조건 초기화</button>
     </div>
   </div>
@@ -469,6 +480,7 @@ function conditionSummary(svc){
 
 document.getElementById("f-birthyear").addEventListener("input", render);
 document.getElementById("f-dong").addEventListener("change", render);
+document.getElementById("btn-search").addEventListener("click", render);
 document.getElementById("btn-reset").addEventListener("click", () => {
   document.getElementById("f-birthyear").value = "";
   guSel.value = "";
