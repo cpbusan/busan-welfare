@@ -91,19 +91,16 @@
       <button class="btn secondary" id="btn-csv-upload" style="margin-top:10px;">CSV 업로드</button>
       <div class="msg" id="csv-msg"></div>
       <div class="csv-guide">
-        컬럼 순서(첫 줄은 제목 줄): <b>서비스명, 대분류, 설명, 구분, 연계기관, 문의처, 지원영역, 나이최소, 나이최대, 장애유형, 장애정도, 소득수준, 지역</b><br>
+        컬럼 순서(첫 줄은 제목 줄): <b>서비스명, 설명, 구분, 연계기관, 문의처, 지원영역, 나이최소, 나이최대, 장애유형, 장애정도, 소득수준, 지역</b><br>
         구분은 공공/기타/민간/컨소시엄/특성화 중 선택. 여러 값은 슬래시(/)로 구분. 지원영역은 주거/보건의료/돌봄/여가/정신건강/사회참여/기타 중 선택. 지역은 "구 동" 형식으로 띄어써서 입력. 조건 없으면 빈칸.<br>
-        예) 방문요양, 돌봄, 재가 어르신 방문 돌봄, 민간, 부산인테리어, 051-000-0000, 돌봄, 65, 120, , 심한 장애/심하지 않은 장애, 기초생활수급자, 북구 구포1동/북구 구포2동
+        예) 방문요양, 재가 어르신 방문 돌봄, 민간, 부산인테리어, 051-000-0000, 돌봄, 65, 120, , 심한 장애/심하지 않은 장애, 기초생활수급자, 북구 구포1동/북구 구포2동
       </div>
     </div>
 
     <div class="card">
       <h3 style="margin-top:0;" id="form-title">새 서비스 등록</h3>
       <input type="hidden" id="edit-id">
-      <div class="row2">
-        <div class="field"><label>서비스명</label><input id="s-name"></div>
-        <div class="field"><label>대분류</label><input id="s-category" placeholder="예: 돌봄, 재활, 일자리"></div>
-      </div>
+      <div class="field"><label>서비스명</label><input id="s-name"></div>
       <div class="field"><label>설명</label><textarea id="s-desc"></textarea></div>
       <div class="row2">
         <div class="field"><label>구분</label>
@@ -148,7 +145,7 @@
     <div class="card">
       <h3 style="margin-top:0;">등록된 서비스 목록</h3>
       <table>
-        <thead><tr><th>서비스명</th><th>대분류</th><th></th></tr></thead>
+        <thead><tr><th>서비스명</th><th>구분</th><th></th></tr></thead>
         <tbody id="service-tbody"></tbody>
       </table>
     </div>
@@ -357,7 +354,6 @@ document.getElementById("btn-change-pw").addEventListener("click", async () => {
 function resetForm(){
   document.getElementById("edit-id").value = "";
   document.getElementById("s-name").value = "";
-  document.getElementById("s-category").value = "";
   document.getElementById("s-desc").value = "";
   document.getElementById("s-contact").value = "";
   document.getElementById("s-servicetype").value = "";
@@ -388,7 +384,6 @@ document.getElementById("btn-save").addEventListener("click", async () => {
     agencyId: currentUid,
     agencyName: currentAgencyName,
     name,
-    category: document.getElementById("s-category").value.trim(),
     description: document.getElementById("s-desc").value.trim(),
     contact: document.getElementById("s-contact").value.trim(),
     serviceType: document.getElementById("s-servicetype").value,
@@ -432,7 +427,7 @@ async function loadMyServices(){
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${s.name}</td>
-      <td>${s.category || ""}</td>
+      <td>${s.serviceType || ""}</td>
       <td>
         <button class="act-btn" data-act="edit" data-id="${d.id}">수정</button>
         &nbsp;
@@ -453,7 +448,6 @@ function editService(id, docs){
   const s = d.data();
   document.getElementById("edit-id").value = id;
   document.getElementById("s-name").value = s.name || "";
-  document.getElementById("s-category").value = s.category || "";
   document.getElementById("s-desc").value = s.description || "";
   document.getElementById("s-contact").value = s.contact || "";
   document.getElementById("s-servicetype").value = s.serviceType || "";
@@ -502,7 +496,6 @@ document.getElementById("btn-csv-upload").addEventListener("click", () => {
             agencyId: currentUid,
             agencyName: currentAgencyName,
             name,
-            category: (row["대분류"]||"").trim(),
             description: (row["설명"]||"").trim(),
             contact: (row["문의처"]||"").trim(),
             serviceType: (row["구분"]||"").trim(),
