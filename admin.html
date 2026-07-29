@@ -69,6 +69,7 @@
   .group-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px;}
   .group-table th{padding:6px;text-align:left;color:var(--ink-soft);font-size:12px;font-weight:700;border-bottom:1px solid var(--line);}
   .group-table td{padding:7px 6px;border-bottom:1px solid var(--line);}
+  .badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;}
 </style>
 </head>
 <body>
@@ -135,6 +136,13 @@
         <div class="field"><label>연계기관</label><input id="s-partner" placeholder="예: 부산인테리어"></div>
       </div>
       <div class="field"><label>문의처</label><input id="s-contact" placeholder="전화번호 등"></div>
+      <div class="field">
+        <label>서비스 상태</label>
+        <select id="s-status">
+          <option value="계속">계속(진행중)</option>
+          <option value="종결">종결</option>
+        </select>
+      </div>
       <div class="field">
         <label>지원영역 <span style="font-weight:400; color:var(--ink-soft); font-size:12px;">(중복 선택 가능)</span></label>
         <div class="chip-group" id="s-area"></div>
@@ -381,6 +389,7 @@ function resetForm(){
   document.getElementById("s-contact").value = "";
   document.getElementById("s-servicetype").value = "";
   document.getElementById("s-partner").value = "";
+  document.getElementById("s-status").value = "계속";
   document.getElementById("s-agemin").value = "";
   document.getElementById("s-agemax").value = "";
   setActiveChips("s-level", []);
@@ -411,6 +420,7 @@ document.getElementById("btn-save").addEventListener("click", async () => {
     contact: document.getElementById("s-contact").value.trim(),
     serviceType: document.getElementById("s-servicetype").value,
     partnerOrg: document.getElementById("s-partner").value.trim(),
+    status: document.getElementById("s-status").value,
     supportAreas: getActiveChips("s-area"),
     ageMin: document.getElementById("s-agemin").value === "" ? 0 : Number(document.getElementById("s-agemin").value),
     ageMax: document.getElementById("s-agemax").value === "" ? 120 : Number(document.getElementById("s-agemax").value),
@@ -468,13 +478,18 @@ async function loadMyServices(){
     details.innerHTML = `
       <summary class="group-summary"><span class="arrow">▶</span> ${key} <span class="count">(${items.length})</span></summary>
       <table class="group-table">
-        <thead><tr><th style="text-align:left;">서비스명</th><th style="text-align:left;">연계기관</th><th></th></tr></thead>
+        <thead><tr><th style="text-align:left;">서비스명</th><th style="text-align:left;">연계기관</th><th style="text-align:left;">상태</th><th></th></tr></thead>
         <tbody>
         ${items.map(d => {
           const s = d.data();
+          const isClosed = s.status === "종결";
+          const statusBadge = isClosed
+            ? `<span class="badge" style="background:#F2E2E2; color:#B04A4A;">종결</span>`
+            : `<span class="badge" style="background:#E8F3EA; color:#3F8A55;">계속</span>`;
           return `<tr>
             <td>${s.name}</td>
             <td>${s.partnerOrg || ""}</td>
+            <td>${statusBadge}</td>
             <td style="text-align:right; white-space:nowrap;">
               <button class="act-btn" data-act="edit" data-id="${d.id}">수정</button>
               &nbsp;
@@ -502,6 +517,7 @@ function editService(id, docs){
   document.getElementById("s-desc").value = s.description || "";
   document.getElementById("s-contact").value = s.contact || "";
   document.getElementById("s-servicetype").value = s.serviceType || "";
+  document.getElementById("s-status").value = s.status || "계속";
   document.getElementById("s-partner").value = s.partnerOrg || "";
   setActiveChips("s-area", s.supportAreas);
   document.getElementById("s-agemin").value = s.ageMin ?? "";
