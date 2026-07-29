@@ -56,7 +56,9 @@
     <div class="card">
       <div class="field">
         <label>기관명</label>
-        <input type="text" id="login-email" placeholder="예: 부산뇌병변복지관">
+        <select id="login-email">
+          <option value="">기관을 선택하세요</option>
+        </select>
       </div>
       <div class="field"><label>비밀번호</label><input type="password" id="login-pw"></div>
       <button class="btn" id="btn-login">로그인</button>
@@ -273,22 +275,38 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
+// ===== 로그인 화면 기관명 드롭다운 채우기 =====
+let agencyEmailMap = {};
+async function loadAgencyOptions(){
+  const sel = document.getElementById("login-email");
+  try{
+    const snap = await getDocs(collection(db, "agencyLogins"));
+    snap.docs.forEach(d => {
+      const data = d.data();
+      agencyEmailMap[data.agencyName] = data.email;
+      const o = document.createElement("option");
+      o.value = data.agencyName;
+      o.textContent = data.agencyName;
+      sel.appendChild(o);
+    });
+  }catch(e){
+    console.error("기관 목록 로드 실패", e);
+  }
+}
+loadAgencyOptions();
+
 document.getElementById("btn-login").addEventListener("click", async () => {
-  const agencyName = document.getElementById("login-email").value.trim();
+  const agencyName = document.getElementById("login-email").value;
   const pw = document.getElementById("login-pw").value;
   const msg = document.getElementById("login-msg");
   msg.textContent = "";
+  if(!agencyName){ msg.textContent = "기관을 선택하세요."; return; }
+  const email = agencyEmailMap[agencyName];
+  if(!email){ msg.textContent = "로그인 실패: 기관 정보를 찾을 수 없습니다."; return; }
   try{
-    const q = query(collection(db, "agencyLogins"), where("agencyName", "==", agencyName));
-    const snap = await getDocs(q);
-    if(snap.empty){
-      msg.textContent = "로그인 실패: 기관명 또는 비밀번호를 확인하세요.";
-      return;
-    }
-    const email = snap.docs[0].data().email;
     await signInWithEmailAndPassword(auth, email, pw);
   }catch(e){
-    msg.textContent = "로그인 실패: 기관명 또는 비밀번호를 확인하세요.";
+    msg.textContent = "로그인 실패: 비밀번호를 확인하세요.";
   }
 });
 
