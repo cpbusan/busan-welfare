@@ -373,6 +373,7 @@ let allServices = [];
 async function loadServices(){
   const snap = await getDocs(collection(db, "services"));
   allServices = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  allServices.sort((a, b) => (a.name || "").localeCompare(b.name || "", "ko"));
   render();
 }
 
