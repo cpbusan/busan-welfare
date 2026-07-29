@@ -3,18 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>부산 북구 복지서비스 찾기</title>
+<title>부산형 고령장애인통합돌봄체계 구축사업</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <style>
   :root{
-    --bg:#FAF3EA;
+    --bg:#F3F6F9;
     --card:#FFFFFF;
-    --ink:#3D2C29;
-    --ink-soft:#7A6A62;
-    --salmon:#E88A76;
-    --salmon-deep:#D96F58;
-    --sage:#8B9A7D;
-    --line:#EAE0D3;
+    --ink:#2B3440;
+    --ink-soft:#6B7686;
+    --salmon:#4FA3D1;
+    --salmon-deep:#2E7FB0;
+    --sage:#8FA3AE;
+    --line:#DCE4EA;
     --radius:16px;
   }
   *{box-sizing:border-box;}
@@ -139,11 +139,11 @@
   }
   .card:hover{
     transform:translateY(-2px);
-    box-shadow:0 6px 18px rgba(217,111,88,0.12);
+    box-shadow:0 6px 18px rgba(46,127,176,0.12);
   }
   .badge{
     display:inline-block;
-    background:#F3E3DC;
+    background:#E4F0F7;
     color:var(--salmon-deep);
     font-size:12px;
     font-weight:700;
@@ -272,7 +272,7 @@
 
 </div>
 
-<footer>부산 북구 복지서비스 안내 · <a href="admin.html">기관 관리자 로그인</a></footer>
+<footer>부산형 고령장애인통합돌봄체계 구축사업 · <a href="admin.html">기관 관리자 로그인</a></footer>
 
 <div class="modal-bg" id="modal-bg">
   <div class="modal" id="modal-body"></div>
@@ -306,7 +306,7 @@ const REGIONS = {
   "사상구": ["삼락동","모라1동","모라3동","덕포1동","덕포2동","괘법동","감전동","주례1동","주례2동","주례3동","학장동","엄궁동"],
   "기장군": ["기장읍","장안읍","정관읍","일광읍","철마면"]
 };
-const DISABILITY_TYPES = ["지체","뇌병변","시각","청각","언어","안면","신장","심장","호흡기","간","장루요루","뇌전증","지적","자폐성","정신"];
+const DISABILITY_TYPES = ["지체","뇌병변","시각","청각","언어","안면","신장","심장","호흡기","간","장루요루","뇌전증","지적","자폐성","정신","췌장"];
 const DISABILITY_LEVELS = ["심한 장애","심하지 않은 장애"];
 const INCOME_LEVELS = ["기초생활수급자","차상위계층","한부모가정"];
 
