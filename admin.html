@@ -55,8 +55,8 @@
     <div class="sub">북구 복지서비스 통합 안내 사이트 · 기관 계정으로 로그인하세요</div>
     <div class="card">
       <div class="field">
-        <label>이메일</label>
-        <input type="email" id="login-email">
+        <label>기관명</label>
+        <input type="text" id="login-email" placeholder="예: 부산뇌병변복지관">
       </div>
       <div class="field"><label>비밀번호</label><input type="password" id="login-pw"></div>
       <button class="btn" id="btn-login">로그인</button>
@@ -274,14 +274,21 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 document.getElementById("btn-login").addEventListener("click", async () => {
-  const email = document.getElementById("login-email").value.trim();
+  const agencyName = document.getElementById("login-email").value.trim();
   const pw = document.getElementById("login-pw").value;
   const msg = document.getElementById("login-msg");
   msg.textContent = "";
   try{
+    const q = query(collection(db, "agencyLogins"), where("agencyName", "==", agencyName));
+    const snap = await getDocs(q);
+    if(snap.empty){
+      msg.textContent = "로그인 실패: 기관명 또는 비밀번호를 확인하세요.";
+      return;
+    }
+    const email = snap.docs[0].data().email;
     await signInWithEmailAndPassword(auth, email, pw);
   }catch(e){
-    msg.textContent = "로그인 실패: 이메일 또는 비밀번호를 확인하세요.";
+    msg.textContent = "로그인 실패: 기관명 또는 비밀번호를 확인하세요.";
   }
 });
 
