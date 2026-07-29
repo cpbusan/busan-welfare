@@ -249,6 +249,11 @@
     </div>
 
     <div class="field" style="margin-bottom:14px;">
+      <label>지원영역</label>
+      <div class="chip-group" id="f-area"></div>
+    </div>
+
+    <div class="field" style="margin-bottom:14px;">
       <label>장애유형</label>
       <div class="chip-group" id="f-type"></div>
     </div>
@@ -310,6 +315,7 @@ const REGIONS = {
 const DISABILITY_TYPES = ["지체","뇌병변","시각","청각","언어","안면","신장","심장","호흡기","간","장루요루","뇌전증","지적","자폐성","정신","췌장"];
 const DISABILITY_LEVELS = ["심한 장애","심하지 않은 장애"];
 const INCOME_LEVELS = ["기초생활수급자","차상위계층","한부모가정"];
+const SUPPORT_AREAS = ["주거","보건의료","돌봄","여가","정신건강","사회참여"];
 
 const guSel = document.getElementById("f-gu");
 const dongSel = document.getElementById("f-dong");
@@ -342,6 +348,7 @@ function buildChips(containerId, options){
     el.appendChild(chip);
   });
 }
+buildChips("f-area", SUPPORT_AREAS);
 buildChips("f-type", DISABILITY_TYPES);
 buildChips("f-level", DISABILITY_LEVELS);
 buildChips("f-income", INCOME_LEVELS);
@@ -362,6 +369,7 @@ function matches(svc){
   const birthYear = document.getElementById("f-birthyear").value;
   const gu = guSel.value;
   const dong = dongSel.value;
+  const areaSel = getActiveChips("f-area");
   const typeSel = getActiveChips("f-type");
   const levelSel = getActiveChips("f-level");
   const incomeSel = getActiveChips("f-income");
@@ -379,6 +387,11 @@ function matches(svc){
     } else if(gu){
       if(!svc.regions.some(r => r.startsWith(gu + " "))) return false;
     }
+  }
+  // 지원영역
+  if(areaSel.length > 0){
+    const svcA = svc.supportAreas || [];
+    if(svcA.length > 0 && !areaSel.some(v => svcA.includes(v))) return false;
   }
   // 장애유형
   if(typeSel.length > 0){
@@ -416,6 +429,7 @@ function cardHtml(svc){
   return `
     <div class="card" id="card-${svc.id}">
       <span class="badge">${svc.category || "일반복지"}</span>
+      ${svc.supportAreas?.length ? `<span class="badge" style="background:#EEF4F8; color:var(--ink-soft);">${svc.supportAreas.join(" · ")}</span>` : ""}
       <h3>${svc.name || ""}</h3>
       <div class="agency">${svc.agencyName || ""}</div>
       <div class="desc">${svc.description || ""}</div>
@@ -445,6 +459,7 @@ function conditionSummary(svc){
   if(svc.ageMin != null || svc.ageMax != null){
     parts.push(`나이 ${svc.ageMin ?? 0}~${svc.ageMax ?? 120}세`);
   }
+  if(svc.supportAreas?.length) parts.push(svc.supportAreas.join(","));
   if(svc.disabilityTypes?.length) parts.push(svc.disabilityTypes.join(","));
   if(svc.disabilityLevel?.length) parts.push(svc.disabilityLevel.join("/"));
   if(svc.incomeLevels?.length) parts.push(svc.incomeLevels.join(","));
