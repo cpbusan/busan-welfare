@@ -211,6 +211,7 @@
   .modal .row{margin-bottom:12px;}
   .modal .row .k{font-size:12px;color:var(--salmon-deep);font-weight:700;margin-bottom:3px;}
   .modal .row .v{font-size:14px;line-height:1.6;}
+  .modal .row .v div{margin-bottom:2px;}
   .modal-close{
     display:block;
     margin-top:18px;
@@ -525,12 +526,13 @@ function conditionSummary(svc){
   if(svc.ageMin != null || svc.ageMax != null){
     parts.push(`나이 ${svc.ageMin ?? 0}~${svc.ageMax ?? 120}세`);
   }
-  if(svc.supportAreas?.length) parts.push(svc.supportAreas.join(","));
-  if(svc.disabilityTypes?.length) parts.push(svc.disabilityTypes.join(","));
-  if(svc.disabilityLevel?.length) parts.push(svc.disabilityLevel.join("/"));
-  if(svc.incomeLevels?.length) parts.push(svc.incomeLevels.join(","));
-  if(svc.regions?.length) parts.push(svc.regions.join(","));
-  return parts.length ? parts.join(" · ") : "조건 무관(전체 대상)";
+  if(svc.supportAreas?.length) parts.push(`지원영역: ${svc.supportAreas.join(", ")}`);
+  if(svc.disabilityTypes?.length) parts.push(`장애유형: ${svc.disabilityTypes.join(", ")}`);
+  if(svc.disabilityLevel?.length) parts.push(`장애정도: ${svc.disabilityLevel.join(", ")}`);
+  if(svc.incomeLevels?.length) parts.push(`소득수준: ${svc.incomeLevels.join(", ")}`);
+  if(svc.regions?.length) parts.push(`지역: ${svc.regions.join(", ")}`);
+  if(!parts.length) return "조건 무관(전체 대상)";
+  return parts.map(p => `<div>${p}</div>`).join("");
 }
 
 document.getElementById("f-birthyear").addEventListener("input", render);
