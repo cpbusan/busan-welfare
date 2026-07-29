@@ -146,7 +146,7 @@
     <div class="card">
       <h3 style="margin-top:0;">등록된 서비스 목록</h3>
       <table>
-        <thead><tr><th>서비스명</th><th>구분</th><th></th></tr></thead>
+        <thead><tr><th>구분</th><th>서비스명</th><th>연계기관</th><th></th></tr></thead>
         <tbody id="service-tbody"></tbody>
       </table>
     </div>
@@ -421,14 +421,20 @@ document.getElementById("btn-save").addEventListener("click", async () => {
 async function loadMyServices(){
   const q = query(collection(db, "services"), where("agencyId", "==", currentUid));
   const snap = await getDocs(q);
+  const docs = [...snap.docs].sort((a, b) => {
+    const t = (a.data().serviceType || "").localeCompare(b.data().serviceType || "", "ko");
+    if(t !== 0) return t;
+    return (a.data().name || "").localeCompare(b.data().name || "", "ko");
+  });
   const tbody = document.getElementById("service-tbody");
   tbody.innerHTML = "";
-  snap.docs.forEach(d => {
+  docs.forEach(d => {
     const s = d.data();
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${s.name}</td>
       <td>${s.serviceType || ""}</td>
+      <td>${s.name}</td>
+      <td>${s.partnerOrg || ""}</td>
       <td>
         <button class="act-btn" data-act="edit" data-id="${d.id}">수정</button>
         &nbsp;
@@ -437,7 +443,7 @@ async function loadMyServices(){
     tbody.appendChild(tr);
   });
   tbody.querySelectorAll("[data-act=edit]").forEach(btn => {
-    btn.addEventListener("click", () => editService(btn.dataset.id, snap.docs));
+    btn.addEventListener("click", () => editService(btn.dataset.id, docs));
   });
   tbody.querySelectorAll("[data-act=delete]").forEach(btn => {
     btn.addEventListener("click", () => deleteService(btn.dataset.id));
