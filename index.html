@@ -289,6 +289,12 @@
       <select id="f-agency"><option value="">전체 기관</option></select>
     </div>
 
+    <div class="field" style="margin-bottom:0; margin-top:14px;">
+      <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:400;">
+        <input type="checkbox" id="f-exclude-closed"> 종결된 서비스 제외
+      </label>
+    </div>
+
     <div class="filter-actions">
       <button class="btn-search" id="btn-search">검색</button>
       <button class="btn-reset" id="btn-reset">조건 초기화</button>
@@ -412,7 +418,9 @@ function matches(svc){
   const levelSel = getActiveChips("f-level");
   const incomeSel = getActiveChips("f-income");
   const agency = document.getElementById("f-agency").value;
+  const excludeClosed = document.getElementById("f-exclude-closed").checked;
 
+  if(excludeClosed && svc.status === "종결") return false;
   if(agency && svc.agencyName !== agency) return false;
 
   // 출생연도 -> 나이로 환산, 서비스에 범위가 없으면(0~120) 전체 허용
@@ -545,12 +553,14 @@ function conditionSummary(svc){
 document.getElementById("f-birthyear").addEventListener("input", render);
 document.getElementById("f-dong").addEventListener("change", render);
 document.getElementById("f-agency").addEventListener("change", render);
+document.getElementById("f-exclude-closed").addEventListener("change", render);
 document.getElementById("btn-search").addEventListener("click", render);
 document.getElementById("btn-reset").addEventListener("click", () => {
   document.getElementById("f-birthyear").value = "";
   guSel.value = "";
   dongSel.innerHTML = `<option value="">동 전체</option>`;
   document.getElementById("f-agency").value = "";
+  document.getElementById("f-exclude-closed").checked = false;
   document.querySelectorAll(".chip.active").forEach(c => c.classList.remove("active"));
   render();
 });
