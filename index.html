@@ -450,7 +450,7 @@ function matches(svc){
   // 지역: 서비스 regions가 비어있으면 전체 허용
   if(svc.regions && svc.regions.length > 0){
     if(dong){
-      if(!svc.regions.includes(`${gu} ${dong}`)) return false;
+      if(!svc.regions.includes(`${gu} ${dong}`) && !svc.regions.includes(`${gu} 전체`)) return false;
     } else if(gu){
       if(!svc.regions.some(r => r.startsWith(gu + " "))) return false;
     }
