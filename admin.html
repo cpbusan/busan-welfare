@@ -138,15 +138,14 @@
     </div>
 
     <div class="card">
-      <h3 style="margin-top:0;">CSV로 한꺼번에 등록</h3>
-      <input type="file" id="csv-file" accept=".csv">
-      <button class="btn secondary" id="btn-csv-upload" style="margin-top:10px;">CSV 업로드</button>
+      <h3 style="margin-top:0;">엑셀·CSV로 한꺼번에 등록</h3>
+      <input type="file" id="csv-file" accept=".csv,.xlsx,.xls">
+      <button class="btn secondary" id="btn-csv-upload" style="margin-top:10px;">파일 업로드</button>
       <button class="btn secondary" id="btn-csv-template" style="margin-top:10px;">CSV 템플릿 다운로드</button>
       <div class="msg" id="csv-msg"></div>
       <div class="csv-guide">
-        컬럼 순서(첫 줄은 제목 줄): <b>서비스명, 설명, 구분, 연계기관, 문의처, 지원영역, 나이최소, 장애유형, 장애정도, 소득수준, 지역</b><br>
-        구분은 공공/민간/컨소시엄/특성화/기타 중 선택. 여러 값은 슬래시(/)로 구분. 지원영역은 주거/보건의료/돌봄/여가/정신건강/권익옹호/기타 중 선택. 지역은 "구 동" 형식으로 띄어써서 입력. 조건 없으면 빈칸.<br>
-        예) 방문요양, 재가 어르신 방문 돌봄, 민간, 부산인테리어, 051-000-0000, 돌봄, 65, , 심한 장애/심하지 않은 장애, 기초생활수급자, 북구 구포1동/북구 구포2동
+        "서비스등록_템플릿.xlsx"를 채운 뒤 <b>그 파일 그대로</b> 업로드하면 돼요 (CSV로 바꿀 필요 없음). CSV 파일도 그대로 업로드 가능해요.<br>
+        항목별로 O/X 체크 열이 있는 형식이에요 (예: 지원영역_돌봄, 장애유형_지체, 지역_북구 등). 해당하면 그 열에 <b>O</b>를 입력, 해당 없으면 빈칸으로 두세요. 지역은 구/군 단위로만 선택돼요(전체 대상 처리).
       </div>
     </div>
 
@@ -209,6 +208,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script type="module">
 import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, EmailAuthProvider, reauthenticateWithCredential, updatePassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -752,7 +752,13 @@ async function deleteService(id){
 
 // ===== CSV 업로드 =====
 document.getElementById("btn-csv-template").addEventListener("click", () => {
-  const header = "서비스명,설명,구분,연계기관,문의처,지원영역,나이최소,장애유형,장애정도,소득수준,지역\n";
+  const meta = ["서비스명","설명","구분","연계기관","문의처","나이최소"];
+  const area = SUPPORT_AREAS.map(v => `지원영역_${v}`);
+  const type = DISABILITY_TYPES.map(v => `장애유형_${v}`);
+  const level = DISABILITY_LEVELS.map(v => `장애정도_${v}`);
+  const income = INCOME_LEVELS.map(v => `소득수준_${v}`);
+  const region = Object.keys(REGIONS).map(gu => `지역_${gu}`);
+  const header = [...meta, ...area, ...type, ...level, ...income, ...region].join(",") + "\n";
   const blob = new Blob(["\uFEFF" + header], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -768,51 +774,83 @@ document.getElementById("btn-csv-upload").addEventListener("click", () => {
   const fileInput = document.getElementById("csv-file");
   const msg = document.getElementById("csv-msg");
   msg.className = "msg";
-  if(!fileInput.files.length){ msg.textContent = "CSV 파일을 선택하세요."; msg.classList.add("error"); return; }
+  if(!fileInput.files.length){ msg.textContent = "파일을 선택하세요."; msg.classList.add("error"); return; }
 
-  Papa.parse(fileInput.files[0], {
-    header: true,
-    skipEmptyLines: true,
-    encoding: "UTF-8",
-    complete: async (results) => {
+  const file = fileInput.files[0];
+  const fileName = file.name.toLowerCase();
+
+  if(fileName.endsWith(".xlsx") || fileName.endsWith(".xls")){
+    const reader = new FileReader();
+    reader.onload = async (e) => {
       try{
-        const batch = writeBatch(db);
-        let count = 0;
-        results.data.forEach(row => {
-          const name = (row["서비스명"] || "").trim();
-          if(!name) return;
-          const ref = doc(collection(db, "services"));
-          batch.set(ref, {
-            agencyId: currentUid,
-            agencyName: currentAgencyName,
-            name,
-            description: (row["설명"]||"").trim(),
-            contact: (row["문의처"]||"").trim(),
-            serviceType: (row["구분"]||"").trim(),
-            partnerOrg: (row["연계기관"]||"").trim(),
-            supportAreas: splitField(row["지원영역"]),
-            ageMin: row["나이최소"] ? Number(row["나이최소"]) : 0,
-            ageMax: 120,
-            disabilityTypes: splitField(row["장애유형"]),
-            disabilityLevel: splitField(row["장애정도"]),
-            incomeLevels: splitField(row["소득수준"]),
-            regions: splitField(row["지역"]),
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
-          });
-          count++;
-        });
-        await batch.commit();
-        msg.textContent = `${count}건 업로드 완료`;
-        msg.classList.add("ok");
-        loadMyServices();
-      }catch(e){
-        msg.textContent = "업로드 실패: " + e.message;
+        const wb = XLSX.read(e.target.result, { type: "array" });
+        const sheetName = wb.SheetNames.includes("서비스등록") ? "서비스등록" : wb.SheetNames[0];
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: "" });
+        await processRows(rows, msg);
+      }catch(err){
+        msg.textContent = "엑셀 읽기 실패: " + err.message;
         msg.classList.add("error");
       }
-    }
-  });
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      encoding: "UTF-8",
+      complete: async (results) => {
+        await processRows(results.data, msg);
+      }
+    });
+  }
 });
+
+async function processRows(rows, msg){
+  try{
+    const batch = writeBatch(db);
+    let count = 0;
+    const isChecked = (row, key) => String(row[key] || "").trim().toUpperCase() === "O";
+    rows.forEach(row => {
+      const name = String(row["서비스명"] || "").trim();
+      if(!name) return;
+      const ref = doc(collection(db, "services"));
+
+      const supportAreas = SUPPORT_AREAS.filter(v => isChecked(row, `지원영역_${v}`));
+      const disabilityTypes = DISABILITY_TYPES.filter(v => isChecked(row, `장애유형_${v}`));
+      const disabilityLevel = DISABILITY_LEVELS.filter(v => isChecked(row, `장애정도_${v}`));
+      const incomeLevels = INCOME_LEVELS.filter(v => isChecked(row, `소득수준_${v}`));
+      const regions = Object.keys(REGIONS).filter(gu => isChecked(row, `지역_${gu}`)).map(gu => `${gu} 전체`);
+
+      batch.set(ref, {
+        agencyId: currentUid,
+        agencyName: currentAgencyName,
+        name,
+        description: String(row["설명"]||"").trim(),
+        contact: String(row["문의처"]||"").trim(),
+        serviceType: String(row["구분"]||"").trim(),
+        partnerOrg: String(row["연계기관"]||"").trim(),
+        supportAreas,
+        ageMin: row["나이최소"] ? Number(row["나이최소"]) : 0,
+        ageMax: 120,
+        disabilityTypes,
+        disabilityLevel,
+        incomeLevels,
+        regions,
+        status: "계속",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      count++;
+    });
+    await batch.commit();
+    msg.textContent = `${count}건 업로드 완료`;
+    msg.classList.add("ok");
+    loadMyServices();
+  }catch(e){
+    msg.textContent = "업로드 실패: " + e.message;
+    msg.classList.add("error");
+  }
+}
 
 function splitField(val){
   if(!val) return [];
