@@ -109,7 +109,7 @@
 
     <div class="hidden" id="superadmin-toplevel-tabs" style="gap:8px; margin-bottom:18px;">
       <button class="btn-tab active" id="toptab-btn-service">서비스 관리</button>
-      <button class="btn-tab" id="toptab-btn-agency">등록기관 관리</button>
+      <button class="btn-tab" id="toptab-btn-agency">등록기관 관리 <span class="hidden" id="agency-request-badge" style="background:#B04A4A; color:#fff; border-radius:999px; font-size:11px; padding:1px 7px; margin-left:4px;"></span></button>
     </div>
 
     <div id="toptab-agency" class="hidden">
@@ -376,6 +376,15 @@ async function loadPendingRequests(){
   const listEl = document.getElementById("approval-list");
   listEl.innerHTML = "불러오는 중...";
   const snap = await getDocs(collection(db, "agencyRequests"));
+
+  const badge = document.getElementById("agency-request-badge");
+  if(snap.size > 0){
+    badge.textContent = snap.size;
+    badge.classList.remove("hidden");
+  } else {
+    badge.classList.add("hidden");
+  }
+
   if(snap.empty){
     listEl.innerHTML = `<div class="msg">대기 중인 신청이 없습니다.</div>`;
     return;
