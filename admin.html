@@ -144,8 +144,9 @@
       <button class="btn secondary" id="btn-csv-template" style="margin-top:10px;">템플릿 다운로드</button>
       <div class="msg" id="csv-msg"></div>
       <div class="csv-guide">
-        "서비스등록_템플릿.xlsx"를 채운 뒤 <b>그 파일 그대로</b> 업로드하면 돼요 (CSV로 바꿀 필요 없음). CSV 파일도 그대로 업로드 가능해요.<br>
-        항목별로 O/X 체크 열이 있는 형식이에요 (예: 지원영역_돌봄, 장애유형_지체, 지역_북구 등). 해당하면 그 열에 <b>O</b>를 입력, 해당 없으면 빈칸으로 두세요. 지역은 구/군 단위로만 선택돼요(전체 대상 처리).
+        컬럼 순서(첫 줄은 제목 줄): <b>서비스명, 설명, 구분, 연계기관, 문의처, 지원영역, 나이최소, 장애유형, 장애정도, 소득수준, 지역</b><br>
+        "서비스등록_템플릿.xlsx"는 각 항목에 드롭다운이 있어요. 여러 개 해당하면 슬래시(/)로 이어 입력하세요 (예: 돌봄/여가). 지역은 구/군 단위로만 선택돼요(전체 대상 처리). 조건 없으면 빈칸.<br>
+        엑셀 파일(.xlsx) 그대로 업로드해도 되고, CSV로 저장해서 업로드해도 됩니다.
       </div>
     </div>
 
@@ -752,13 +753,7 @@ async function deleteService(id){
 
 // ===== CSV 업로드 =====
 document.getElementById("btn-csv-template").addEventListener("click", () => {
-  const meta = ["서비스명","설명","구분","연계기관","문의처","나이최소"];
-  const area = SUPPORT_AREAS.map(v => `지원영역_${v}`);
-  const type = DISABILITY_TYPES.map(v => `장애유형_${v}`);
-  const level = DISABILITY_LEVELS.map(v => `장애정도_${v}`);
-  const income = INCOME_LEVELS.map(v => `소득수준_${v}`);
-  const region = Object.keys(REGIONS).map(gu => `지역_${gu}`);
-  const header = [...meta, ...area, ...type, ...level, ...income, ...region].join(",") + "\n";
+  const header = "서비스명,설명,구분,연계기관,문의처,지원영역,나이최소,장애유형,장애정도,소득수준,지역\n";
   const blob = new Blob(["\uFEFF" + header], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -809,17 +804,13 @@ async function processRows(rows, msg){
   try{
     const batch = writeBatch(db);
     let count = 0;
-    const isChecked = (row, key) => String(row[key] || "").trim().toUpperCase() === "O";
     rows.forEach(row => {
       const name = String(row["서비스명"] || "").trim();
       if(!name) return;
       const ref = doc(collection(db, "services"));
 
-      const supportAreas = SUPPORT_AREAS.filter(v => isChecked(row, `지원영역_${v}`));
-      const disabilityTypes = DISABILITY_TYPES.filter(v => isChecked(row, `장애유형_${v}`));
-      const disabilityLevel = DISABILITY_LEVELS.filter(v => isChecked(row, `장애정도_${v}`));
-      const incomeLevels = INCOME_LEVELS.filter(v => isChecked(row, `소득수준_${v}`));
-      const regions = Object.keys(REGIONS).filter(gu => isChecked(row, `지역_${gu}`)).map(gu => `${gu} 전체`);
+      const regionField = splitField(String(row["지역"] || ""));
+      const regions = regionField.map(gu => Object.keys(REGIONS).includes(gu) ? `${gu} 전체` : gu);
 
       batch.set(ref, {
         agencyId: currentUid,
@@ -829,12 +820,12 @@ async function processRows(rows, msg){
         contact: String(row["문의처"]||"").trim(),
         serviceType: String(row["구분"]||"").trim(),
         partnerOrg: String(row["연계기관"]||"").trim(),
-        supportAreas,
+        supportAreas: splitField(String(row["지원영역"] || "")),
         ageMin: row["나이최소"] ? Number(row["나이최소"]) : 0,
         ageMax: 120,
-        disabilityTypes,
-        disabilityLevel,
-        incomeLevels,
+        disabilityTypes: splitField(String(row["장애유형"] || "")),
+        disabilityLevel: splitField(String(row["장애정도"] || "")),
+        incomeLevels: splitField(String(row["소득수준"] || "")),
         regions,
         status: "계속",
         createdAt: serverTimestamp(),
