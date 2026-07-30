@@ -163,7 +163,7 @@
         <div class="field"><label>구분</label>
           <select id="s-servicetype"><option value="">선택 안 함</option></select>
         </div>
-        <div class="field"><label>연계기관</label><input id="s-partner" placeholder="예: 부산인테리어"></div>
+        <div class="field"><label>연계기관</label><input id="s-partner" placeholder="예: 부산인테리어"><div id="partner-dup-warning" style="font-size:12px; color:var(--salmon-deep); margin-top:4px;"></div></div>
       </div>
       <div class="field"><label>문의처</label><input id="s-contact" placeholder="전화번호 등"></div>
       <div class="field">
@@ -352,6 +352,7 @@ function setActiveChips(containerId, values){
 }
 
 let currentUid = null;
+let myServicesCache = [];
 let currentAgencyName = "";
 
 // ===== 로그인 상태 감지 =====
@@ -614,6 +615,7 @@ function resetForm(){
   document.getElementById("s-contact").value = "";
   document.getElementById("s-servicetype").value = "";
   document.getElementById("s-partner").value = "";
+  document.getElementById("partner-dup-warning").textContent = "";
   document.getElementById("s-status").value = "계속";
   document.getElementById("s-agemin").value = "";
   setActiveChips("s-level", []);
@@ -629,6 +631,26 @@ function resetForm(){
 }
 
 document.getElementById("btn-cancel-edit").addEventListener("click", resetForm);
+
+// ===== 연계기관 중복 확인: 같은 연계기관으로 이미 등록된 서비스가 있으면 알려줌 =====
+function normalizeText(s){
+  return (s || "").replace(/\s+/g, "").toLowerCase();
+}
+document.getElementById("s-partner").addEventListener("blur", () => {
+  const warnEl = document.getElementById("partner-dup-warning");
+  const partnerVal = document.getElementById("s-partner").value.trim();
+  const editId = document.getElementById("edit-id").value;
+  if(!partnerVal){ warnEl.textContent = ""; return; }
+  const norm = normalizeText(partnerVal);
+  const matches = myServicesCache
+    .filter(d => d.id !== editId && normalizeText(d.data().partnerOrg) === norm)
+    .map(d => d.data().name);
+  if(matches.length){
+    warnEl.textContent = `⚠ "${partnerVal}" 연계기관으로 이미 등록된 서비스가 있어요: ${matches.join(", ")} — 중복이 아닌지 확인해주세요.`;
+  } else {
+    warnEl.textContent = "";
+  }
+});
 
 document.getElementById("btn-save").addEventListener("click", async () => {
   const msg = document.getElementById("form-msg");
@@ -688,6 +710,7 @@ async function loadMyServices(){
     if(aClosed !== bClosed) return aClosed - bClosed;
     return (a.data().name || "").localeCompare(b.data().name || "", "ko");
   });
+  myServicesCache = docs;
 
   // 구분별로 그룹핑
   const groups = new Map();
