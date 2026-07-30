@@ -423,11 +423,11 @@ function matches(svc){
   if(excludeClosed && svc.status === "종결") return false;
   if(agency && svc.agencyName !== agency) return false;
 
-  // 출생연도 -> 나이로 환산, 서비스에 범위가 없으면(0~120) 전체 허용
+  // 출생연도 -> 나이로 환산, 최소 나이 조건만 확인 (상한 없음)
   if(birthYear !== ""){
     const age = new Date().getFullYear() - Number(birthYear);
-    const min = svc.ageMin ?? 0, max = svc.ageMax ?? 120;
-    if(age < min || age > max) return false;
+    const min = svc.ageMin ?? 0;
+    if(age < min) return false;
   }
   // 지역: 서비스 regions가 비어있으면 전체 허용
   if(svc.regions && svc.regions.length > 0){
@@ -538,8 +538,8 @@ document.getElementById("modal-bg").addEventListener("click", e => {
 
 function conditionSummary(svc){
   const parts = [];
-  if(svc.ageMin != null || svc.ageMax != null){
-    parts.push(`나이 ${svc.ageMin ?? 0}~${svc.ageMax ?? 120}세`);
+  if(svc.ageMin != null && svc.ageMin > 0){
+    parts.push(`나이 ${svc.ageMin}세~`);
   }
   if(svc.supportAreas?.length) parts.push(`지원영역: ${svc.supportAreas.join(", ")}`);
   if(svc.disabilityTypes?.length) parts.push(`장애유형: ${svc.disabilityTypes.join(", ")}`);
