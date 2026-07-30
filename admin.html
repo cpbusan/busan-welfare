@@ -102,6 +102,11 @@
       <button class="btn secondary" id="btn-logout">로그아웃</button>
     </div>
 
+    <div class="card hidden" id="approval-panel">
+      <h3 style="margin-top:0;">기관 등록 신청 승인</h3>
+      <div id="approval-list"></div>
+    </div>
+
     <div class="card">
       <h3 style="margin-top:0;">비밀번호 변경</h3>
       <div class="field"><label>현재 비밀번호</label><input type="password" id="pw-current"></div>
@@ -183,14 +188,18 @@
 
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, EmailAuthProvider, reauthenticateWithCredential, updatePassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, query, where, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+// 아래 UID를 가진 계정만 "기관 등록 신청 승인" 패널을 볼 수 있습니다.
+// Firebase 콘솔 > Authentication > Users 에서 부산뇌병변복지관 계정의 UID를 복사해 넣으세요.
+const SUPERADMIN_UID = "여기에_슈퍼관리자_UID";
 
 const DISABILITY_TYPES = ["지체","뇌병변","시각","청각","언어","안면","신장","심장","호흡기","간","장루요루","뇌전증","지적","자폐성","정신","췌장","비장애"];
 const DISABILITY_LEVELS = ["심한 장애","심하지 않은 장애"];
@@ -219,7 +228,12 @@ const REGIONS = {
 let selectedRegions = new Set();
 
 const guSel = document.getElementById("s-region-gu");
-Object.keys(REGIONS).forEach(gu => {
+const guList2 = Object.keys(REGIONS).sort((a, b) => {
+  if(a === "기장군") return 1;
+  if(b === "기장군") return -1;
+  return a.localeCompare(b, "ko");
+});
+guList2.forEach(gu => {
   const o = document.createElement("option");
   o.value = gu; o.textContent = gu;
   guSel.appendChild(o);
@@ -307,11 +321,73 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById("login-view").classList.add("hidden");
     document.getElementById("main-view").classList.remove("hidden");
     loadMyServices();
+    if(currentUid === SUPERADMIN_UID){
+      document.getElementById("approval-panel").classList.remove("hidden");
+      loadPendingRequests();
+    }
   } else {
     document.getElementById("login-view").classList.remove("hidden");
     document.getElementById("main-view").classList.add("hidden");
   }
 });
+
+// ===== 기관 등록 신청 승인 (슈퍼관리자 전용) =====
+async function loadPendingRequests(){
+  const listEl = document.getElementById("approval-list");
+  listEl.innerHTML = "불러오는 중...";
+  const snap = await getDocs(collection(db, "agencyRequests"));
+  if(snap.empty){
+    listEl.innerHTML = `<div class="msg">대기 중인 신청이 없습니다.</div>`;
+    return;
+  }
+  listEl.innerHTML = "";
+  snap.docs.forEach(d => {
+    const r = d.data();
+    const row = document.createElement("div");
+    row.style.cssText = "border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:10px;";
+    row.innerHTML = `
+      <div style="font-weight:700;">${r.agencyName}</div>
+      <div style="font-size:13px; color:var(--ink-soft); margin-bottom:8px;">${r.email}</div>
+      <button class="btn" data-act="approve">승인</button>
+      <button class="btn secondary" data-act="reject" style="margin-left:6px;">거절</button>
+      <div class="msg"></div>
+    `;
+    listEl.appendChild(row);
+
+    row.querySelector('[data-act="approve"]').addEventListener("click", async () => {
+      const msg = row.querySelector(".msg");
+      msg.className = "msg";
+      try{
+        await approveRequest(d.id, r.agencyName, r.email, r.password);
+        msg.textContent = "승인 완료! 기관은 신청 시 입력한 이메일/비밀번호로 로그인할 수 있어요.";
+        msg.classList.add("ok");
+        setTimeout(loadPendingRequests, 1200);
+      }catch(e){
+        msg.textContent = "승인 실패: " + e.message;
+        msg.classList.add("error");
+      }
+    });
+
+    row.querySelector('[data-act="reject"]').addEventListener("click", async () => {
+      if(!confirm("이 신청을 거절할까요?")) return;
+      await deleteDoc(doc(db, "agencyRequests", d.id));
+      loadPendingRequests();
+    });
+  });
+}
+
+async function approveRequest(reqId, agencyName, email, password){
+  // 보조 Firebase 앱으로 계정을 생성해야 현재 관리자(슈퍼관리자) 로그인 세션이 유지됩니다.
+  const secondaryApp = initializeApp(firebaseConfig, "approve-" + Date.now());
+  const secondaryAuth = getAuth(secondaryApp);
+  const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+  const uid = cred.user.uid;
+  await setDoc(doc(db, "agencies", uid), { agencyName });
+  await setDoc(doc(db, "agencyLogins", uid), { agencyName, email });
+  await signOut(secondaryAuth);
+  await deleteApp(secondaryApp);
+  await deleteDoc(doc(db, "agencyRequests", reqId));
+}
 
 // ===== 로그인 화면 기관명 드롭다운 채우기 =====
 let agencyEmailMap = {};
