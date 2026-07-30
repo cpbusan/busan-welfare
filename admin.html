@@ -107,7 +107,7 @@
       <button class="btn secondary" id="btn-logout">로그아웃</button>
     </div>
 
-    <div class="hidden" id="superadmin-toplevel-tabs" style="display:flex; gap:8px; margin-bottom:18px;">
+    <div class="hidden" id="superadmin-toplevel-tabs" style="gap:8px; margin-bottom:18px;">
       <button class="btn-tab active" id="toptab-btn-service">서비스 관리</button>
       <button class="btn-tab" id="toptab-btn-agency">등록기관 관리</button>
     </div>
@@ -187,7 +187,7 @@
         <div class="chip-group" id="s-income"></div>
       </div>
       <div class="field">
-        <label>거주지역 — 구 선택 후 동을 눌러 추가 (선택 없으면 전체 지역)</label>
+        <label>거주지역 — 구 선택 후 "○○구 전체" 또는 개별 동을 눌러 추가 (선택 없으면 부산 전체)</label>
         <div style="display:flex; gap:6px; margin-bottom:8px;">
           <select id="s-region-gu" style="flex:1;"><option value="">구/군 선택</option></select>
         </div>
@@ -266,6 +266,22 @@ function renderDongChips(){
   const dongEl = document.getElementById("s-region-dong");
   dongEl.innerHTML = "";
   const gu = guSel.value;
+  if(!gu) return;
+
+  // "○○구 전체" 한 번에 선택하는 칩 (동을 일일이 안 눌러도 됨)
+  const allKey = `${gu} 전체`;
+  const allChip = document.createElement("div");
+  allChip.className = "chip" + (selectedRegions.has(allKey) ? " active" : "");
+  allChip.style.fontWeight = "700";
+  allChip.textContent = `${gu} 전체`;
+  allChip.addEventListener("click", () => {
+    if(selectedRegions.has(allKey)) selectedRegions.delete(allKey);
+    else selectedRegions.add(allKey);
+    renderDongChips();
+    renderSelectedRegions();
+  });
+  dongEl.appendChild(allChip);
+
   (REGIONS[gu] || []).forEach(dong => {
     const key = `${gu} ${dong}`;
     const chip = document.createElement("div");
@@ -344,7 +360,9 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById("main-view").classList.remove("hidden");
     loadMyServices();
     if(currentUid === SUPERADMIN_UID){
-      document.getElementById("superadmin-toplevel-tabs").classList.remove("hidden");
+      const tabBar = document.getElementById("superadmin-toplevel-tabs");
+      tabBar.classList.remove("hidden");
+      tabBar.style.display = "flex";
       loadPendingRequests();
     }
   } else {
@@ -585,6 +603,11 @@ document.getElementById("btn-save").addEventListener("click", async () => {
   msg.className = "msg";
   const name = document.getElementById("s-name").value.trim();
   if(!name){ msg.textContent = "서비스명을 입력하세요."; msg.classList.add("error"); return; }
+
+  if(guSel.value && selectedRegions.size === 0){
+    const proceed = confirm(`"${guSel.value}"를 선택하셨는데 동이나 "${guSel.value} 전체"를 누르지 않았어요.\n이대로 저장하면 지역 조건 없이 "부산 전체"로 저장됩니다. 계속할까요?`);
+    if(!proceed) return;
+  }
 
   const payload = {
     agencyId: currentUid,
