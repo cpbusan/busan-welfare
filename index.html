@@ -372,7 +372,7 @@ guList.forEach(gu => {
 });
 guSel.addEventListener("change", () => {
   dongSel.innerHTML = `<option value="">동 전체</option>`;
-  (REGIONS[guSel.value] || []).forEach(dong => {
+  [...(REGIONS[guSel.value] || [])].sort((a, b) => a.localeCompare(b, "ko")).forEach(dong => {
     const o = document.createElement("option");
     o.value = dong; o.textContent = dong;
     dongSel.appendChild(o);
