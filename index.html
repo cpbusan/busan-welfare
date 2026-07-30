@@ -408,10 +408,23 @@ let allServices = [];
 async function loadServices(){
   const snap = await getDocs(collection(db, "services"));
   allServices = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  function regionSortKey(svc){
+    if(!svc.regions || svc.regions.length === 0) return null; // 지역 미지정 = "부산" 전체, 맨 앞
+    return svc.regions[0].split(" ")[0];
+  }
   allServices.sort((a, b) => {
     const aClosed = a.status === "종결" ? 1 : 0;
     const bClosed = b.status === "종결" ? 1 : 0;
     if(aClosed !== bClosed) return aClosed - bClosed;
+
+    const aRegion = regionSortKey(a);
+    const bRegion = regionSortKey(b);
+    if(aRegion === null && bRegion !== null) return -1;
+    if(aRegion !== null && bRegion === null) return 1;
+    if(aRegion !== null && bRegion !== null && aRegion !== bRegion){
+      return aRegion.localeCompare(bRegion, "ko");
+    }
+
     return (a.name || "").localeCompare(b.name || "", "ko");
   });
 
