@@ -107,19 +107,27 @@
       <button class="btn secondary" id="btn-logout">로그아웃</button>
     </div>
 
-    <div class="card hidden" id="approval-panel">
-      <div style="display:flex; gap:8px; margin-bottom:14px;">
-        <button class="btn-tab active" id="tab-btn-requests">기관 등록 신청</button>
-        <button class="btn-tab" id="tab-btn-agencies">등록된 기관 관리</button>
-      </div>
-      <div id="tab-requests">
-        <div id="approval-list"></div>
-      </div>
-      <div id="tab-agencies" class="hidden">
-        <div id="agency-manage-list"></div>
+    <div class="hidden" id="superadmin-toplevel-tabs" style="display:flex; gap:8px; margin-bottom:18px;">
+      <button class="btn-tab active" id="toptab-btn-service">서비스 관리</button>
+      <button class="btn-tab" id="toptab-btn-agency">등록기관 관리</button>
+    </div>
+
+    <div id="toptab-agency" class="hidden">
+      <div class="card">
+        <div style="display:flex; gap:8px; margin-bottom:14px;">
+          <button class="btn-tab active" id="tab-btn-requests">기관 등록 신청</button>
+          <button class="btn-tab" id="tab-btn-agencies">등록된 기관 관리</button>
+        </div>
+        <div id="tab-requests">
+          <div id="approval-list"></div>
+        </div>
+        <div id="tab-agencies" class="hidden">
+          <div id="agency-manage-list"></div>
+        </div>
       </div>
     </div>
 
+    <div id="toptab-service">
     <div class="card">
       <h3 style="margin-top:0;">비밀번호 변경</h3>
       <div class="field"><label>현재 비밀번호</label><input type="password" id="pw-current"></div>
@@ -194,6 +202,7 @@
     <div class="card">
       <h3 style="margin-top:0;">등록된 서비스 목록</h3>
       <div id="service-groups"></div>
+    </div>
     </div>
   </div>
 
@@ -335,7 +344,7 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById("main-view").classList.remove("hidden");
     loadMyServices();
     if(currentUid === SUPERADMIN_UID){
-      document.getElementById("approval-panel").classList.remove("hidden");
+      document.getElementById("superadmin-toplevel-tabs").classList.remove("hidden");
       loadPendingRequests();
     }
   } else {
@@ -402,6 +411,20 @@ async function approveRequest(reqId, agencyName, email, password){
   await deleteDoc(doc(db, "agencyRequests", reqId));
 }
 
+// ===== 최상위 탭 전환 (서비스 관리 / 등록기관 관리) - 슈퍼관리자 전용 =====
+document.getElementById("toptab-btn-service").addEventListener("click", () => {
+  document.getElementById("toptab-btn-service").classList.add("active");
+  document.getElementById("toptab-btn-agency").classList.remove("active");
+  document.getElementById("toptab-service").classList.remove("hidden");
+  document.getElementById("toptab-agency").classList.add("hidden");
+});
+document.getElementById("toptab-btn-agency").addEventListener("click", () => {
+  document.getElementById("toptab-btn-agency").classList.add("active");
+  document.getElementById("toptab-btn-service").classList.remove("active");
+  document.getElementById("toptab-agency").classList.remove("hidden");
+  document.getElementById("toptab-service").classList.add("hidden");
+});
+
 // ===== 탭 전환 (기관 등록 신청 / 등록된 기관 관리) =====
 document.getElementById("tab-btn-requests").addEventListener("click", () => {
   document.getElementById("tab-btn-requests").classList.add("active");
@@ -437,25 +460,18 @@ async function loadAgencyList(){
         <div style="font-weight:700;">${r.agencyName}${r.disabled ? ' <span style="color:#B04A4A; font-weight:400; font-size:13px;">(비활성화)</span>' : ""}</div>
         <div style="font-size:12px; color:var(--ink-soft);">${r.email}</div>
       </div>
-      <div>
-        <button class="act-btn" data-act="toggle" data-id="${d.id}">${r.disabled ? "활성화" : "비활성화"}</button>
-        &nbsp;
-        <button class="act-btn" style="color:#B04A4A;" data-act="delete" data-id="${d.id}" data-name="${r.agencyName}">삭제</button>
-      </div>
+      <button class="act-btn" style="${r.disabled ? "" : "color:#B04A4A;"}" data-act="${r.disabled ? "restore" : "delete"}">${r.disabled ? "활성화" : "삭제"}</button>
     `;
     listEl.appendChild(row);
 
-    row.querySelector('[data-act="toggle"]').addEventListener("click", async () => {
-      try{
-        await updateDoc(doc(db, "agencyLogins", d.id), { disabled: !r.disabled });
+    row.querySelector("button").addEventListener("click", async () => {
+      if(r.disabled){
+        // 활성화: 로그인만 다시 허용 (삭제된 서비스는 복구되지 않음)
+        await updateDoc(doc(db, "agencyLogins", d.id), { disabled: false });
         loadAgencyList();
-      }catch(e){
-        alert("변경 실패: " + e.message);
+        return;
       }
-    });
-
-    row.querySelector('[data-act="delete"]').addEventListener("click", async () => {
-      if(!confirm(`"${r.agencyName}" 기관을 삭제할까요?\n등록된 서비스도 모두 함께 삭제되어 index 페이지에서 보이지 않게 됩니다.\n(Firebase Authentication 계정 자체는 콘솔에서 별도로 지워야 완전히 삭제돼요)`)) return;
+      if(!confirm(`"${r.agencyName}" 기관을 삭제할까요?\n로그인이 막히고, 등록된 서비스도 모두 함께 삭제되어 index 페이지에서 보이지 않게 됩니다.\n(목록에는 "(비활성화)"로 남아 나중에 로그인만 다시 허용할 수 있어요. Firebase Authentication 계정 자체는 콘솔에서 별도로 지워야 완전히 삭제돼요)`)) return;
       try{
         const q = query(collection(db, "agencies"), where("agencyName", "==", r.agencyName));
         const aSnap = await getDocs(q);
@@ -465,9 +481,8 @@ async function loadAgencyList(){
           for(const sDoc of sSnap.docs){
             await deleteDoc(doc(db, "services", sDoc.id));
           }
-          await deleteDoc(doc(db, "agencies", aDoc.id));
         }
-        await deleteDoc(doc(db, "agencyLogins", d.id));
+        await updateDoc(doc(db, "agencyLogins", d.id), { disabled: true });
         loadAgencyList();
       }catch(e){
         alert("삭제 실패: " + e.message);
