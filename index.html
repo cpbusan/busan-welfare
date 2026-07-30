@@ -521,7 +521,9 @@ function badgeColor(text){
 
 function cardHtml(svc){
   const guSet = [...new Set((svc.regions || []).map(r => r.split(" ")[0]).filter(Boolean))];
-  const guBadges = guSet.map(gu => `<span class="badge" style="background:#EFEFEF; color:#5A5A5A;">${gu}</span>`).join("");
+  const guBadges = guSet.length
+    ? guSet.map(gu => `<span class="badge" style="background:#EFEFEF; color:#5A5A5A;">${gu}</span>`).join("")
+    : `<span class="badge" style="background:#EFEFEF; color:#5A5A5A;">부산</span>`;
   const areaBadges = (svc.supportAreas || []).map(area => {
     const c = badgeColor(area);
     return `<span class="badge" style="background:${c.bg}; color:${c.fg};">${area}</span>`;
