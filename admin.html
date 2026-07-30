@@ -66,9 +66,13 @@
   }
   .group-block[open] .group-summary .arrow{transform:rotate(90deg);}
   .group-summary .count{font-weight:400;color:var(--ink-soft);font-size:13px;}
-  .group-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px;}
-  .group-table th{padding:6px;text-align:left;color:var(--ink-soft);font-size:12px;font-weight:700;border-bottom:1px solid var(--line);}
-  .group-table td{padding:7px 6px;border-bottom:1px solid var(--line);}
+  .group-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px;table-layout:fixed;}
+  .group-table th{padding:6px;text-align:left;color:var(--ink-soft);font-size:12px;font-weight:700;border-bottom:1px solid var(--line);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .group-table td{padding:7px 6px;border-bottom:1px solid var(--line);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .group-table th:nth-child(1), .group-table td:nth-child(1){width:38%;}
+  .group-table th:nth-child(2), .group-table td:nth-child(2){width:32%;}
+  .group-table th:nth-child(3), .group-table td:nth-child(3){width:15%;}
+  .group-table th:nth-child(4), .group-table td:nth-child(4){width:15%; text-align:right; white-space:nowrap;}
   .badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;}
   .btn-tab{
     background:none;border:1px solid var(--line);color:var(--ink-soft);
