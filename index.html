@@ -533,7 +533,7 @@ function badgeColor(text){
 }
 
 function cardHtml(svc){
-  const guSet = [...new Set((svc.regions || []).map(r => r.split(" ")[0]).filter(Boolean))];
+  const guSet = [...new Set((svc.regions || []).map(r => r.split(" ")[0]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ko"));
   const guBadges = guSet.length
     ? guSet.map(gu => `<span class="badge" style="background:#EFEFEF; color:#5A5A5A;">${gu}</span>`).join("")
     : `<span class="badge" style="background:#EFEFEF; color:#5A5A5A;">부산</span>`;
@@ -580,7 +580,7 @@ function conditionSummary(svc){
   if(svc.disabilityTypes?.length) parts.push(`장애유형: ${svc.disabilityTypes.join(", ")}`);
   if(svc.disabilityLevel?.length) parts.push(`장애정도: ${svc.disabilityLevel.join(", ")}`);
   if(svc.incomeLevels?.length) parts.push(`소득수준: ${svc.incomeLevels.join(", ")}`);
-  if(svc.regions?.length) parts.push(`지역: ${svc.regions.join(", ")}`);
+  if(svc.regions?.length) parts.push(`지역: ${[...svc.regions].sort((a, b) => a.localeCompare(b, "ko")).join(", ")}`);
   if(!parts.length) return "조건 무관(전체 대상)";
   return parts.map(p => `<div>${p}</div>`).join("");
 }
