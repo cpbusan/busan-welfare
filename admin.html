@@ -695,7 +695,12 @@ async function loadMyServices(){
   const groupKeys = [...groups.keys()].sort((a, b) => {
     if(a === "미분류") return 1;
     if(b === "미분류") return -1;
-    return a.localeCompare(b, "ko");
+    const ai = SERVICE_TYPES.indexOf(a);
+    const bi = SERVICE_TYPES.indexOf(b);
+    if(ai === -1 && bi === -1) return a.localeCompare(b, "ko");
+    if(ai === -1) return 1;
+    if(bi === -1) return -1;
+    return ai - bi;
   });
 
   const container = document.getElementById("service-groups");
