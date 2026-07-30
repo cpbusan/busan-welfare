@@ -488,11 +488,14 @@ async function loadAgencyList(){
         <div style="font-weight:700;">${r.agencyName}${r.disabled ? ' <span style="color:#B04A4A; font-weight:400; font-size:13px;">(비활성화)</span>' : ""}</div>
         <div style="font-size:12px; color:var(--ink-soft);">${r.email}</div>
       </div>
-      <button class="act-btn" style="${r.disabled ? "" : "color:#B04A4A;"}" data-act="${r.disabled ? "restore" : "delete"}">${r.disabled ? "활성화" : "삭제"}</button>
+      <div>
+        <button class="act-btn" style="${r.disabled ? "" : "color:#B04A4A;"}" data-act="${r.disabled ? "restore" : "delete"}">${r.disabled ? "활성화" : "삭제"}</button>
+        ${r.disabled ? `&nbsp;<button class="act-btn" style="color:#B04A4A;" data-act="purge">목록에서 제거</button>` : ""}
+      </div>
     `;
     listEl.appendChild(row);
 
-    row.querySelector("button").addEventListener("click", async () => {
+    row.querySelector('[data-act="restore"], [data-act="delete"]')?.addEventListener("click", async () => {
       if(r.disabled){
         // 활성화: 로그인만 다시 허용 (삭제된 서비스는 복구되지 않음)
         await updateDoc(doc(db, "agencyLogins", d.id), { disabled: false });
@@ -514,6 +517,21 @@ async function loadAgencyList(){
         loadAgencyList();
       }catch(e){
         alert("삭제 실패: " + e.message);
+      }
+    });
+
+    row.querySelector('[data-act="purge"]')?.addEventListener("click", async () => {
+      if(!confirm(`"${r.agencyName}"을(를) 목록에서 완전히 제거할까요?\n(Firebase Authentication 계정을 이미 콘솔에서 지우셨을 때 사용하세요. 되돌릴 수 없어요)`)) return;
+      try{
+        const q = query(collection(db, "agencies"), where("agencyName", "==", r.agencyName));
+        const aSnap = await getDocs(q);
+        for(const aDoc of aSnap.docs){
+          await deleteDoc(doc(db, "agencies", aDoc.id));
+        }
+        await deleteDoc(doc(db, "agencyLogins", d.id));
+        loadAgencyList();
+      }catch(e){
+        alert("제거 실패: " + e.message);
       }
     });
   });
