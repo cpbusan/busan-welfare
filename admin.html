@@ -111,11 +111,6 @@
       <button class="btn secondary" id="btn-logout">로그아웃</button>
     </div>
 
-    <details class="group-block" style="margin-bottom:18px; background:#fff; border:1px solid var(--line); border-radius:12px; padding:0 14px;">
-      <summary class="group-summary"><span class="arrow">▶</span> 📋 업데이트 내역</summary>
-      <div id="changelog-list" style="padding-bottom:14px; font-size:13px; line-height:1.9; color:var(--ink-soft);"></div>
-    </details>
-
     <div class="hidden" id="superadmin-toplevel-tabs" style="gap:8px; margin-bottom:18px;">
       <button class="btn-tab active" id="toptab-btn-service">서비스 관리</button>
       <button class="btn-tab" id="toptab-btn-agency">등록기관 관리 <span class="hidden" id="agency-request-badge" style="background:#B04A4A; color:#fff; border-radius:999px; font-size:11px; padding:1px 7px; margin-left:4px;"></span></button>
@@ -161,6 +156,9 @@
 
     <div class="card">
       <h3 style="margin-top:0;" id="form-title">새 서비스 등록</h3>
+      <div style="font-size:12px; color:var(--salmon-deep); background:#FCEEE0; border-radius:8px; padding:8px 12px; margin-bottom:14px;">
+        ⚠ 서비스명·설명 등에 대상자(당사자)나 연계기관 담당자의 이름, 연락처, 주소 등 개인정보는 적지 말아주세요. 이 내용은 누구나 볼 수 있는 공개 페이지에 그대로 노출돼요.
+      </div>
       <input type="hidden" id="edit-id">
       <div class="field"><label>서비스명</label><input id="s-name"></div>
       <div class="field"><label>설명</label><textarea id="s-desc"></textarea></div>
@@ -213,6 +211,11 @@
       <div id="service-groups"></div>
     </div>
     </div>
+
+    <details class="group-block" style="margin-top:18px; background:#fff; border:1px solid var(--line); border-radius:12px; padding:0 14px;">
+      <summary class="group-summary"><span class="arrow">▶</span> 📋 업데이트 내역</summary>
+      <div id="changelog-list" style="padding-bottom:14px; font-size:13px; line-height:1.9; color:var(--ink-soft);"></div>
+    </details>
   </div>
 
 </div>
@@ -571,13 +574,34 @@ loadAgencyOptions();
 // ===== 업데이트 내역 (패치노트) =====
 // 새 업데이트가 있을 때마다 배열 맨 위에 한 줄씩 추가하면 됩니다.
 const CHANGELOG = [
+  { date: "7월 30일", text: "'새 서비스 등록' 화면에 개인정보(대상자·담당자 이름/연락처 등) 입력 금지 안내 문구 추가" },
+  { date: "7월 30일", text: "업데이트 내역 패널을 화면 맨 아래로 이동" },
+  { date: "7월 30일", text: "이전 작업 히스토리를 업데이트 내역에 소급 반영" },
   { date: "7월 30일", text: "연계기관 입력 시 같은 연계기관으로 등록된 기존 서비스가 있으면 자동으로 알려줌 (중복 등록 방지)" },
   { date: "7월 30일", text: "등록된 서비스 목록 표를 고정 너비로 정렬해 그룹마다 열이 어긋나던 문제 수정" },
   { date: "7월 30일", text: "'구분' 그룹 순서를 공공→민간→컨소시엄→특성화→기타→미분류로 고정" },
+  { date: "7월 30일", text: "지역 배지·상세보기 지역 목록을 가나다순으로 정렬" },
+  { date: "7월 30일", text: "나이 상한(나이최대) 항목 제거 — 최소 나이 이상이면 매칭되도록 단순화" },
+  { date: "7월 30일", text: "구/군 목록을 가나다순 정렬(기장군만 예외로 맨 끝) — 공개 사이트·관리자 화면 동일 적용" },
+  { date: "7월 30일", text: "지원영역에 '기타', 소득수준 항목 재정비, 지역 구/동 선택 오류 방지용 확인창 추가" },
   { date: "7월 30일", text: "템플릿 다운로드가 파일을 직접 만들어 받도록 개선(외부 파일 의존 제거)" },
+  { date: "7월 30일", text: "엑셀 템플릿에 드롭다운 목록 + 클릭 없이 보이는 선택값 참고표 추가" },
   { date: "7월 29일", text: "엑셀(.xlsx) 파일을 CSV 변환 없이 그대로 업로드해서 서비스 일괄 등록 가능" },
   { date: "7월 29일", text: "기관 등록 신청 승인 기능 추가 (부산뇌병변복지관 계정 전용 '등록기관 관리' 탭)" },
-  { date: "7월 29일", text: "서비스 상태(계속/종결) 구분 및 표시 추가" },
+  { date: "7월 29일", text: "기관 비활성화/삭제 기능 추가 (삭제 시 등록된 서비스도 함께 정리)" },
+  { date: "7월 29일", text: "'서비스 관리' / '등록기관 관리' 최상위 탭 구조로 화면 재구성" },
+  { date: "7월 29일", text: "서비스 상태(계속/종결) 구분 및 표시, 정렬(계속→종결) 반영" },
+  { date: "7월 29일", text: "기관 로그인 방식을 이메일 입력 대신 기관명 드롭다운 선택으로 변경" },
+  { date: "7월 29일", text: "'대분류' 필드 제거, 목록·CSV 항목을 '구분'·'연계기관' 중심으로 재정비" },
+  { date: "7월 29일", text: "기관별 검색 드롭다운 필터, 종결 서비스 제외 체크박스 추가" },
+  { date: "7월 28일", text: "지원영역 필터 추가(주거·보건의료·돌봄·여가·정신건강·권익옹호), 장애유형에 비장애·췌장 추가" },
+  { date: "7월 28일", text: "서비스 카드에 지원영역별 색상 배지 적용, 대상 조건을 항목별 줄바꿈으로 표시" },
+  { date: "7월 28일", text: "소득수준 항목을 기초생활수급자·차상위계층·중위소득100%이하·소득무관으로 정비" },
+  { date: "7월 28일", text: "전체 디자인 색상을 웜베이지·살몬 → 스카이블루·그레이 톤으로 변경" },
+  { date: "7월 27일", text: "거주지역을 '구 선택 후 동 선택' 방식으로 개편, 출생연도 필터·장애유형/정도 분리 도입" },
+  { date: "7월 27일", text: "사업명을 '부산형 고령장애인통합돌봄체계 구축사업'으로 변경" },
+  { date: "7월 27일", text: "비밀번호 변경 기능, 기관 계정 로그인(이메일 방식) 최초 구축" },
+  { date: "7월 27일", text: "북구 복지서비스 통합 안내 사이트 최초 제작 (Firebase 연동, 서비스 등록·검색 기본 구조)" },
 ];
 
 function renderChangelog(){
