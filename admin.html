@@ -111,6 +111,11 @@
       <button class="btn secondary" id="btn-logout">로그아웃</button>
     </div>
 
+    <details class="group-block" style="margin-bottom:18px; background:#fff; border:1px solid var(--line); border-radius:12px; padding:0 14px;">
+      <summary class="group-summary"><span class="arrow">▶</span> 📋 업데이트 내역</summary>
+      <div id="changelog-list" style="padding-bottom:14px; font-size:13px; line-height:1.9; color:var(--ink-soft);"></div>
+    </details>
+
     <div class="hidden" id="superadmin-toplevel-tabs" style="gap:8px; margin-bottom:18px;">
       <button class="btn-tab active" id="toptab-btn-service">서비스 관리</button>
       <button class="btn-tab" id="toptab-btn-agency">등록기관 관리 <span class="hidden" id="agency-request-badge" style="background:#B04A4A; color:#fff; border-radius:999px; font-size:11px; padding:1px 7px; margin-left:4px;"></span></button>
@@ -562,6 +567,25 @@ async function loadAgencyOptions(){
   }
 }
 loadAgencyOptions();
+
+// ===== 업데이트 내역 (패치노트) =====
+// 새 업데이트가 있을 때마다 배열 맨 위에 한 줄씩 추가하면 됩니다.
+const CHANGELOG = [
+  { date: "7월 30일", text: "연계기관 입력 시 같은 연계기관으로 등록된 기존 서비스가 있으면 자동으로 알려줌 (중복 등록 방지)" },
+  { date: "7월 30일", text: "등록된 서비스 목록 표를 고정 너비로 정렬해 그룹마다 열이 어긋나던 문제 수정" },
+  { date: "7월 30일", text: "'구분' 그룹 순서를 공공→민간→컨소시엄→특성화→기타→미분류로 고정" },
+  { date: "7월 30일", text: "템플릿 다운로드가 파일을 직접 만들어 받도록 개선(외부 파일 의존 제거)" },
+  { date: "7월 29일", text: "엑셀(.xlsx) 파일을 CSV 변환 없이 그대로 업로드해서 서비스 일괄 등록 가능" },
+  { date: "7월 29일", text: "기관 등록 신청 승인 기능 추가 (부산뇌병변복지관 계정 전용 '등록기관 관리' 탭)" },
+  { date: "7월 29일", text: "서비스 상태(계속/종결) 구분 및 표시 추가" },
+];
+
+function renderChangelog(){
+  const el = document.getElementById("changelog-list");
+  if(!el) return;
+  el.innerHTML = CHANGELOG.map(item => `<div>· <b style="color:var(--ink);">${item.date}</b> — ${item.text}</div>`).join("");
+}
+renderChangelog();
 
 document.getElementById("btn-login").addEventListener("click", async () => {
   const agencyName = document.getElementById("login-email").value;
