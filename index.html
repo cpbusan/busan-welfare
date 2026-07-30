@@ -342,8 +342,8 @@ const REGIONS = {
 };
 const DISABILITY_TYPES = ["지체","뇌병변","시각","청각","언어","안면","신장","심장","호흡기","간","장루요루","뇌전증","지적","자폐성","정신","췌장","비장애"];
 const DISABILITY_LEVELS = ["심한 장애","심하지 않은 장애"];
-const INCOME_LEVELS = ["기초생활수급자","차상위계층"];
-const SUPPORT_AREAS = ["주거","보건의료","돌봄","여가","정신건강","사회참여","기타"];
+const INCOME_LEVELS = ["기초생활수급자","차상위계층","중위소득100%이하","소득무관"];
+const SUPPORT_AREAS = ["주거","보건의료","돌봄","여가","정신건강","권익옹호","기타"];
 
 const guSel = document.getElementById("f-gu");
 const dongSel = document.getElementById("f-dong");
@@ -491,7 +491,7 @@ const AREA_COLOR_MAP = {
   "돌봄": BADGE_PALETTE[7],
   "여가": BADGE_PALETTE[3],
   "정신건강": BADGE_PALETTE[4],
-  "사회참여": BADGE_PALETTE[5],
+  "권익옹호": BADGE_PALETTE[5],
   "기타": BADGE_PALETTE[6],
 };
 function badgeColor(text){
