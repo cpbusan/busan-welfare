@@ -70,6 +70,11 @@
   .group-table th{padding:6px;text-align:left;color:var(--ink-soft);font-size:12px;font-weight:700;border-bottom:1px solid var(--line);}
   .group-table td{padding:7px 6px;border-bottom:1px solid var(--line);}
   .badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;}
+  .btn-tab{
+    background:none;border:1px solid var(--line);color:var(--ink-soft);
+    padding:8px 16px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;
+  }
+  .btn-tab.active{background:var(--salmon);color:#fff;border-color:var(--salmon);}
 </style>
 </head>
 <body>
@@ -103,8 +108,16 @@
     </div>
 
     <div class="card hidden" id="approval-panel">
-      <h3 style="margin-top:0;">기관 등록 신청 승인</h3>
-      <div id="approval-list"></div>
+      <div style="display:flex; gap:8px; margin-bottom:14px;">
+        <button class="btn-tab active" id="tab-btn-requests">기관 등록 신청</button>
+        <button class="btn-tab" id="tab-btn-agencies">등록된 기관 관리</button>
+      </div>
+      <div id="tab-requests">
+        <div id="approval-list"></div>
+      </div>
+      <div id="tab-agencies" class="hidden">
+        <div id="agency-manage-list"></div>
+      </div>
     </div>
 
     <div class="card">
@@ -389,6 +402,80 @@ async function approveRequest(reqId, agencyName, email, password){
   await deleteDoc(doc(db, "agencyRequests", reqId));
 }
 
+// ===== 탭 전환 (기관 등록 신청 / 등록된 기관 관리) =====
+document.getElementById("tab-btn-requests").addEventListener("click", () => {
+  document.getElementById("tab-btn-requests").classList.add("active");
+  document.getElementById("tab-btn-agencies").classList.remove("active");
+  document.getElementById("tab-requests").classList.remove("hidden");
+  document.getElementById("tab-agencies").classList.add("hidden");
+});
+document.getElementById("tab-btn-agencies").addEventListener("click", () => {
+  document.getElementById("tab-btn-agencies").classList.add("active");
+  document.getElementById("tab-btn-requests").classList.remove("active");
+  document.getElementById("tab-agencies").classList.remove("hidden");
+  document.getElementById("tab-requests").classList.add("hidden");
+  loadAgencyList();
+});
+
+// ===== 등록된 기관 관리 (슈퍼관리자 전용) =====
+async function loadAgencyList(){
+  const listEl = document.getElementById("agency-manage-list");
+  listEl.innerHTML = "불러오는 중...";
+  const snap = await getDocs(collection(db, "agencyLogins"));
+  if(snap.empty){
+    listEl.innerHTML = `<div class="msg">등록된 기관이 없습니다.</div>`;
+    return;
+  }
+  const list = snap.docs.sort((a, b) => (a.data().agencyName || "").localeCompare(b.data().agencyName || "", "ko"));
+  listEl.innerHTML = "";
+  list.forEach(d => {
+    const r = d.data();
+    const row = document.createElement("div");
+    row.style.cssText = "display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line); padding:10px 2px;";
+    row.innerHTML = `
+      <div>
+        <div style="font-weight:700;">${r.agencyName}${r.disabled ? ' <span style="color:#B04A4A; font-weight:400; font-size:13px;">(비활성화)</span>' : ""}</div>
+        <div style="font-size:12px; color:var(--ink-soft);">${r.email}</div>
+      </div>
+      <div>
+        <button class="act-btn" data-act="toggle" data-id="${d.id}">${r.disabled ? "활성화" : "비활성화"}</button>
+        &nbsp;
+        <button class="act-btn" style="color:#B04A4A;" data-act="delete" data-id="${d.id}" data-name="${r.agencyName}">삭제</button>
+      </div>
+    `;
+    listEl.appendChild(row);
+
+    row.querySelector('[data-act="toggle"]').addEventListener("click", async () => {
+      try{
+        await updateDoc(doc(db, "agencyLogins", d.id), { disabled: !r.disabled });
+        loadAgencyList();
+      }catch(e){
+        alert("변경 실패: " + e.message);
+      }
+    });
+
+    row.querySelector('[data-act="delete"]').addEventListener("click", async () => {
+      if(!confirm(`"${r.agencyName}" 기관을 삭제할까요?\n등록된 서비스도 모두 함께 삭제되어 index 페이지에서 보이지 않게 됩니다.\n(Firebase Authentication 계정 자체는 콘솔에서 별도로 지워야 완전히 삭제돼요)`)) return;
+      try{
+        const q = query(collection(db, "agencies"), where("agencyName", "==", r.agencyName));
+        const aSnap = await getDocs(q);
+        for(const aDoc of aSnap.docs){
+          // 해당 기관이 등록한 서비스 전체 삭제
+          const sSnap = await getDocs(query(collection(db, "services"), where("agencyId", "==", aDoc.id)));
+          for(const sDoc of sSnap.docs){
+            await deleteDoc(doc(db, "services", sDoc.id));
+          }
+          await deleteDoc(doc(db, "agencies", aDoc.id));
+        }
+        await deleteDoc(doc(db, "agencyLogins", d.id));
+        loadAgencyList();
+      }catch(e){
+        alert("삭제 실패: " + e.message);
+      }
+    });
+  });
+}
+
 // ===== 로그인 화면 기관명 드롭다운 채우기 =====
 let agencyEmailMap = {};
 async function loadAgencyOptions(){
@@ -397,7 +484,7 @@ async function loadAgencyOptions(){
     const snap = await getDocs(collection(db, "agencyLogins"));
     const list = snap.docs.map(d => d.data());
     list.sort((a, b) => (a.agencyName || "").localeCompare(b.agencyName || "", "ko"));
-    list.forEach(data => {
+    list.filter(data => !data.disabled).forEach(data => {
       agencyEmailMap[data.agencyName] = data.email;
       const o = document.createElement("option");
       o.value = data.agencyName;
