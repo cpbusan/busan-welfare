@@ -282,7 +282,7 @@ function renderDongChips(){
   });
   dongEl.appendChild(allChip);
 
-  (REGIONS[gu] || []).forEach(dong => {
+  [...(REGIONS[gu] || [])].sort((a, b) => a.localeCompare(b, "ko")).forEach(dong => {
     const key = `${gu} ${dong}`;
     const chip = document.createElement("div");
     chip.className = "chip" + (selectedRegions.has(key) ? " active" : "");
