@@ -223,6 +223,10 @@
 
 </div>
 
+<footer style="text-align:center; padding:20px; font-size:12px; color:var(--ink-soft);">
+  페이지 이용 문의: 부산뇌병변복지관 (bcp1021@daum.net · 070-4612-9705)
+</footer>
+
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script type="module">
@@ -577,6 +581,7 @@ loadAgencyOptions();
 // ===== 업데이트 내역 (패치노트) =====
 // 새 업데이트가 있을 때마다 배열 맨 위에 한 줄씩 추가하면 됩니다.
 const CHANGELOG = [
+  { date: "7월 30일", text: "페이지 하단에 문의처(부산뇌병변복지관) 안내 푸터 추가" },
   { date: "7월 30일", text: "로그아웃 옆에 '서비스페이지 보기' 버튼 추가 (새 탭에서 공개 사이트 열기)" },
   { date: "7월 30일", text: "'새 서비스 등록' 화면에 개인정보(대상자·담당자 이름/연락처 등) 입력 금지 안내 문구 추가" },
   { date: "7월 30일", text: "업데이트 내역 패널을 화면 맨 아래로 이동" },
