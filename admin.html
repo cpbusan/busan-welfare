@@ -135,14 +135,16 @@
     </div>
 
     <div id="toptab-service">
-    <div class="card">
-      <h3 style="margin-top:0;">비밀번호 변경</h3>
-      <div class="field"><label>현재 비밀번호</label><input type="password" id="pw-current"></div>
-      <div class="field"><label>새 비밀번호</label><input type="password" id="pw-new" placeholder="6자 이상"></div>
-      <div class="field"><label>새 비밀번호 확인</label><input type="password" id="pw-confirm"></div>
-      <button class="btn secondary" id="btn-change-pw">비밀번호 변경</button>
-      <div class="msg" id="pw-msg"></div>
-    </div>
+    <details class="group-block" style="background:#fff; border:1px solid var(--line); border-radius:16px; padding:0 22px; margin-bottom:18px;">
+      <summary class="group-summary" style="padding:20px 0;"><span class="arrow">▶</span> 비밀번호 변경</summary>
+      <div style="padding-bottom:22px;">
+        <div class="field"><label>현재 비밀번호</label><input type="password" id="pw-current"></div>
+        <div class="field"><label>새 비밀번호</label><input type="password" id="pw-new" placeholder="6자 이상"></div>
+        <div class="field"><label>새 비밀번호 확인</label><input type="password" id="pw-confirm"></div>
+        <button class="btn secondary" id="btn-change-pw">비밀번호 변경</button>
+        <div class="msg" id="pw-msg"></div>
+      </div>
+    </details>
 
     <div class="card">
       <h3 style="margin-top:0;">엑셀·CSV로 한꺼번에 등록</h3>
@@ -581,6 +583,7 @@ loadAgencyOptions();
 // ===== 업데이트 내역 (패치노트) =====
 // 새 업데이트가 있을 때마다 배열 맨 위에 한 줄씩 추가하면 됩니다.
 const CHANGELOG = [
+  { date: "7월 30일", text: "'비밀번호 변경' 영역을 기본적으로 접힌 토글로 변경" },
   { date: "7월 30일", text: "페이지 하단에 문의처(부산뇌병변복지관) 안내 푸터 추가" },
   { date: "7월 30일", text: "로그아웃 옆에 '서비스페이지 보기' 버튼 추가 (새 탭에서 공개 사이트 열기)" },
   { date: "7월 30일", text: "'새 서비스 등록' 화면에 개인정보(대상자·담당자 이름/연락처 등) 입력 금지 안내 문구 추가" },
