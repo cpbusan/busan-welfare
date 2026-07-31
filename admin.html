@@ -108,7 +108,10 @@
         <div class="agency-name" id="agency-name-label"></div>
         <div class="sub">서비스 등록·수정</div>
       </div>
-      <button class="btn secondary" id="btn-logout">로그아웃</button>
+      <div>
+        <button class="btn secondary" id="btn-logout" style="margin-right:8px;">로그아웃</button>
+        <a class="btn secondary" href="index.html" target="_blank" style="text-decoration:none; display:inline-block;">서비스페이지 보기</a>
+      </div>
     </div>
 
     <div class="hidden" id="superadmin-toplevel-tabs" style="gap:8px; margin-bottom:18px;">
@@ -574,6 +577,7 @@ loadAgencyOptions();
 // ===== 업데이트 내역 (패치노트) =====
 // 새 업데이트가 있을 때마다 배열 맨 위에 한 줄씩 추가하면 됩니다.
 const CHANGELOG = [
+  { date: "7월 30일", text: "로그아웃 옆에 '서비스페이지 보기' 버튼 추가 (새 탭에서 공개 사이트 열기)" },
   { date: "7월 30일", text: "'새 서비스 등록' 화면에 개인정보(대상자·담당자 이름/연락처 등) 입력 금지 안내 문구 추가" },
   { date: "7월 30일", text: "업데이트 내역 패널을 화면 맨 아래로 이동" },
   { date: "7월 30일", text: "이전 작업 히스토리를 업데이트 내역에 소급 반영" },
